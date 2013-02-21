@@ -8,28 +8,31 @@
 
 /* Begin PBXBuildFile section */
 		2A11C61116C4EDFB00510459 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61016C4EDFB00510459 /* Foundation.framework */; };
-		2A11C62016C4EDFB00510459 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61F16C4EDFB00510459 /* SenTestingKit.framework */; };
-		2A11C62316C4EDFB00510459 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61016C4EDFB00510459 /* Foundation.framework */; };
-		2A11C62616C4EDFB00510459 /* libPLImageManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C60D16C4EDFB00510459 /* libPLImageManager.a */; };
 		2A11C66916C4F0D800510459 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C62116C4EDFB00510459 /* UIKit.framework */; };
-		2A11C66A16C4F0E200510459 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C62116C4EDFB00510459 /* UIKit.framework */; };
-		ABCA900D81BEF217D689D5D4 /* PLImageManagerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9D4AA4703AFF2D357777 /* PLImageManagerTests.m */; };
+		2A8DA82616D665C100F369FB /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A8DA82516D665C100F369FB /* CoreGraphics.framework */; };
+		2ACB1D0F16D6275B0003E572 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61F16C4EDFB00510459 /* SenTestingKit.framework */; };
+		2ACB1D1016D6275B0003E572 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C62116C4EDFB00510459 /* UIKit.framework */; };
+		2ACB1D1116D6275B0003E572 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61016C4EDFB00510459 /* Foundation.framework */; };
+		2ACB1D6316D62B520003E572 /* Kiwi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2ACB1D5D16D62B520003E572 /* Kiwi.framework */; };
+		2ACB1D6516D62B520003E572 /* PLImageManagerSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = 2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */; };
+		2ACB1D6916D62C350003E572 /* libPLImageManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C60D16C4EDFB00510459 /* libPLImageManager.a */; };
+		2ACB1D6B16D64D930003E572 /* OCMock-iPhone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */; };
 		ABCA904F6D2CA056E02C0277 /* PLImageCache.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA96C48D2F2A0936FF4D4B /* PLImageCache.h */; };
 		ABCA9092DB9AA8C0A83A86F7 /* NSString+SHA1.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */; };
 		ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */; };
+		ABCA91348A9A010A452EB599 /* UIImage+RandomImage.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */; };
 		ABCA93CBF68FCD87F8E7EBAE /* PLImageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA980C1A23986FE73C70D2 /* PLImageManager.m */; };
+		ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */; };
 		ABCA99822E94E12BB3A13B1C /* PLImageReadOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E72E7386AC5CAEF0E83 /* PLImageReadOperation.h */; };
 		ABCA9A24670B49930F07A2C6 /* NSString+SHA1.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */; };
 		ABCA9BA0C6097F9E7C6D90F7 /* PLImageManager.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */; };
-		ABCA9C0723AC3DBE98174E8F /* PLImageManagerTests-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABCA95475FB6326D6BD07A17 /* PLImageManagerTests-Info.plist */; };
 		ABCA9D4E4AE47E43E3E727ED /* PLImageReadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C589E5F49A0B4925CAF /* PLImageReadOperation.m */; };
-		ABCA9D5599674B4B5D2853C4 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABCA9BB915C9EA5DF9BFCD55 /* InfoPlist.strings */; };
 		ABCA9E19B40572AE53454119 /* PLImageCache.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */; };
 		ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2A11C62416C4EDFB00510459 /* PBXContainerItemProxy */ = {
+		2ACB1D6716D62C310003E572 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A11C60516C4EDFB00510459 /* Project object */;
 			proxyType = 1;
@@ -58,23 +61,29 @@
 /* Begin PBXFileReference section */
 		2A11C60D16C4EDFB00510459 /* libPLImageManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPLImageManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A11C61016C4EDFB00510459 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		2A11C61E16C4EDFB00510459 /* PLImageManagerTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PLImageManagerTests.octest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A11C61F16C4EDFB00510459 /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
 		2A11C62116C4EDFB00510459 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
-		ABCA94C5F119A6E0571DFABA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
-		ABCA95475FB6326D6BD07A17 /* PLImageManagerTests-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; path = "PLImageManagerTests-Info.plist"; sourceTree = "<group>"; };
-		ABCA95DC68114AC078960F8C /* PLImageManagerTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManagerTests.h; sourceTree = "<group>"; };
+		2A8DA82516D665C100F369FB /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		2ACB1D0E16D6275B0003E572 /* PLImageManagerSpecs.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PLImageManagerSpecs.octest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2ACB1D5C16D62B520003E572 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		2ACB1D5D16D62B520003E572 /* Kiwi.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Kiwi.framework; sourceTree = "<group>"; };
+		2ACB1D5E16D62B520003E572 /* PLImageManagerSpecs-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "PLImageManagerSpecs-Info.plist"; sourceTree = "<group>"; };
+		2ACB1D5F16D62B520003E572 /* PLImageManagerSpecs-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PLImageManagerSpecs-Prefix.pch"; sourceTree = "<group>"; };
+		2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerSpecs.m; sourceTree = "<group>"; };
+		2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = "OCMock-iPhone.framework"; sourceTree = "<group>"; };
+		ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+RandomImage.m"; sourceTree = "<group>"; };
 		ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLURLImageProvider.h; sourceTree = "<group>"; };
 		ABCA96C48D2F2A0936FF4D4B /* PLImageCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageCache.h; sourceTree = "<group>"; };
 		ABCA980C1A23986FE73C70D2 /* PLImageManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManager.m; sourceTree = "<group>"; };
+		ABCA999306AB0CA306459260 /* UIImage+RandomImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+RandomImage.h"; sourceTree = "<group>"; };
 		ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCache.m; sourceTree = "<group>"; };
 		ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLURLImageProvider.m; sourceTree = "<group>"; };
 		ABCA9C589E5F49A0B4925CAF /* PLImageReadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageReadOperation.m; sourceTree = "<group>"; };
 		ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+SHA1.m"; sourceTree = "<group>"; };
-		ABCA9D4AA4703AFF2D357777 /* PLImageManagerTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerTests.m; sourceTree = "<group>"; };
 		ABCA9E72E7386AC5CAEF0E83 /* PLImageReadOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageReadOperation.h; sourceTree = "<group>"; };
 		ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+SHA1.h"; sourceTree = "<group>"; };
 		ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManager.h; sourceTree = "<group>"; };
+		ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCacheSpecs.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,14 +96,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		2A11C61A16C4EDFB00510459 /* Frameworks */ = {
+		2ACB1D0A16D6275B0003E572 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2A11C62016C4EDFB00510459 /* SenTestingKit.framework in Frameworks */,
-				2A11C62316C4EDFB00510459 /* Foundation.framework in Frameworks */,
-				2A11C62616C4EDFB00510459 /* libPLImageManager.a in Frameworks */,
-				2A11C66A16C4F0E200510459 /* UIKit.framework in Frameworks */,
+				2A8DA82616D665C100F369FB /* CoreGraphics.framework in Frameworks */,
+				2ACB1D6916D62C350003E572 /* libPLImageManager.a in Frameworks */,
+				2ACB1D0F16D6275B0003E572 /* SenTestingKit.framework in Frameworks */,
+				2ACB1D1016D6275B0003E572 /* UIKit.framework in Frameworks */,
+				2ACB1D1116D6275B0003E572 /* Foundation.framework in Frameworks */,
+				2ACB1D6316D62B520003E572 /* Kiwi.framework in Frameworks */,
+				2ACB1D6B16D64D930003E572 /* OCMock-iPhone.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,10 +116,10 @@
 		2A11C60416C4EDFB00510459 = {
 			isa = PBXGroup;
 			children = (
+				2ACB1D5A16D62B520003E572 /* PLImageManagerSpecs */,
 				2A11C60F16C4EDFB00510459 /* Frameworks */,
 				2A11C60E16C4EDFB00510459 /* Products */,
 				ABCA92EC0D27A1A5FDC3B00B /* Sources */,
-				ABCA9FC3C81197E0B57CC4B6 /* Tests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -115,7 +127,7 @@
 			isa = PBXGroup;
 			children = (
 				2A11C60D16C4EDFB00510459 /* libPLImageManager.a */,
-				2A11C61E16C4EDFB00510459 /* PLImageManagerTests.octest */,
+				2ACB1D0E16D6275B0003E572 /* PLImageManagerSpecs.octest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -124,10 +136,43 @@
 			isa = PBXGroup;
 			children = (
 				2A11C61016C4EDFB00510459 /* Foundation.framework */,
-				2A11C61F16C4EDFB00510459 /* SenTestingKit.framework */,
 				2A11C62116C4EDFB00510459 /* UIKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		2ACB1D5A16D62B520003E572 /* PLImageManagerSpecs */ = {
+			isa = PBXGroup;
+			children = (
+				2A11C61F16C4EDFB00510459 /* SenTestingKit.framework */,
+				2ACB1D5D16D62B520003E572 /* Kiwi.framework */,
+				2A8DA82516D665C100F369FB /* CoreGraphics.framework */,
+				2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */,
+				2ACB1D5B16D62B520003E572 /* InfoPlist.strings */,
+				2ACB1D5E16D62B520003E572 /* PLImageManagerSpecs-Info.plist */,
+				2ACB1D5F16D62B520003E572 /* PLImageManagerSpecs-Prefix.pch */,
+				2ACB1D6016D62B520003E572 /* Specs */,
+				ABCA91F5F55A559904AC5018 /* Helpers */,
+			);
+			path = PLImageManagerSpecs;
+			sourceTree = "<group>";
+		};
+		2ACB1D6016D62B520003E572 /* Specs */ = {
+			isa = PBXGroup;
+			children = (
+				2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */,
+				ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */,
+			);
+			path = Specs;
+			sourceTree = "<group>";
+		};
+		ABCA91F5F55A559904AC5018 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */,
+				ABCA999306AB0CA306459260 /* UIImage+RandomImage.h */,
+			);
+			path = Helpers;
 			sourceTree = "<group>";
 		};
 		ABCA92EC0D27A1A5FDC3B00B /* Sources */ = {
@@ -145,25 +190,6 @@
 				ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */,
 			);
 			path = Sources;
-			sourceTree = "<group>";
-		};
-		ABCA972DF8AFB8796312915F /* en.lproj */ = {
-			isa = PBXGroup;
-			children = (
-				ABCA9BB915C9EA5DF9BFCD55 /* InfoPlist.strings */,
-			);
-			path = en.lproj;
-			sourceTree = "<group>";
-		};
-		ABCA9FC3C81197E0B57CC4B6 /* Tests */ = {
-			isa = PBXGroup;
-			children = (
-				ABCA972DF8AFB8796312915F /* en.lproj */,
-				ABCA95475FB6326D6BD07A17 /* PLImageManagerTests-Info.plist */,
-				ABCA95DC68114AC078960F8C /* PLImageManagerTests.h */,
-				ABCA9D4AA4703AFF2D357777 /* PLImageManagerTests.m */,
-			);
-			path = Tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -186,23 +212,23 @@
 			productReference = 2A11C60D16C4EDFB00510459 /* libPLImageManager.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		2A11C61D16C4EDFB00510459 /* PLImageManagerTests */ = {
+		2ACB1D0D16D6275B0003E572 /* PLImageManagerSpecs */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A11C63516C4EDFB00510459 /* Build configuration list for PBXNativeTarget "PLImageManagerTests" */;
+			buildConfigurationList = 2ACB1D1C16D6275B0003E572 /* Build configuration list for PBXNativeTarget "PLImageManagerSpecs" */;
 			buildPhases = (
-				2A11C61916C4EDFB00510459 /* Sources */,
-				2A11C61A16C4EDFB00510459 /* Frameworks */,
-				2A11C61B16C4EDFB00510459 /* Resources */,
-				2A11C61C16C4EDFB00510459 /* ShellScript */,
+				2ACB1D0916D6275B0003E572 /* Sources */,
+				2ACB1D0A16D6275B0003E572 /* Frameworks */,
+				2ACB1D0B16D6275B0003E572 /* Resources */,
+				2ACB1D0C16D6275B0003E572 /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				2A11C62516C4EDFB00510459 /* PBXTargetDependency */,
+				2ACB1D6816D62C310003E572 /* PBXTargetDependency */,
 			);
-			name = PLImageManagerTests;
-			productName = PLImageManagerTests;
-			productReference = 2A11C61E16C4EDFB00510459 /* PLImageManagerTests.octest */;
+			name = PLImageManagerSpecs;
+			productName = PLImageManagerSpecs;
+			productReference = 2ACB1D0E16D6275B0003E572 /* PLImageManagerSpecs.octest */;
 			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
@@ -227,25 +253,23 @@
 			projectRoot = "";
 			targets = (
 				2A11C60C16C4EDFB00510459 /* PLImageManager */,
-				2A11C61D16C4EDFB00510459 /* PLImageManagerTests */,
+				2ACB1D0D16D6275B0003E572 /* PLImageManagerSpecs */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		2A11C61B16C4EDFB00510459 /* Resources */ = {
+		2ACB1D0B16D6275B0003E572 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABCA9D5599674B4B5D2853C4 /* InfoPlist.strings in Resources */,
-				ABCA9C0723AC3DBE98174E8F /* PLImageManagerTests-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		2A11C61C16C4EDFB00510459 /* ShellScript */ = {
+		2ACB1D0C16D6275B0003E572 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -273,29 +297,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		2A11C61916C4EDFB00510459 /* Sources */ = {
+		2ACB1D0916D6275B0003E572 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABCA900D81BEF217D689D5D4 /* PLImageManagerTests.m in Sources */,
+				2ACB1D6516D62B520003E572 /* PLImageManagerSpecs.m in Sources */,
+				ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */,
+				ABCA91348A9A010A452EB599 /* UIImage+RandomImage.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2A11C62516C4EDFB00510459 /* PBXTargetDependency */ = {
+		2ACB1D6816D62C310003E572 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 2A11C60C16C4EDFB00510459 /* PLImageManager */;
-			targetProxy = 2A11C62416C4EDFB00510459 /* PBXContainerItemProxy */;
+			targetProxy = 2ACB1D6716D62C310003E572 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		ABCA9BB915C9EA5DF9BFCD55 /* InfoPlist.strings */ = {
+		2ACB1D5B16D62B520003E572 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				ABCA94C5F119A6E0571DFABA /* InfoPlist.strings */,
+				2ACB1D5C16D62B520003E572 /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -366,7 +392,10 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
-				OTHER_LDFLAGS = "-ObjC";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-all_load",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -382,37 +411,50 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
-				OTHER_LDFLAGS = "-ObjC";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-all_load",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
-		2A11C63616C4EDFB00510459 /* Debug */ = {
+		2ACB1D1D16D6275B0003E572 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
 					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+					"\"$(SRCROOT)/PLImageManagerSpecs\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "";
+				GCC_PREFIX_HEADER = "PLImageManagerSpecs/PLImageManagerSpecs-Prefix.pch";
+				INFOPLIST_FILE = "PLImageManagerSpecs/PLImageManagerSpecs-Info.plist";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-ObjC",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = octest;
 			};
 			name = Debug;
 		};
-		2A11C63716C4EDFB00510459 /* Release */ = {
+		2ACB1D1E16D6275B0003E572 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
 					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+					"\"$(SRCROOT)/PLImageManagerSpecs\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "";
+				GCC_PREFIX_HEADER = "PLImageManagerSpecs/PLImageManagerSpecs-Prefix.pch";
+				INFOPLIST_FILE = "PLImageManagerSpecs/PLImageManagerSpecs-Info.plist";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-ObjC",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = octest;
 			};
@@ -439,11 +481,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A11C63516C4EDFB00510459 /* Build configuration list for PBXNativeTarget "PLImageManagerTests" */ = {
+		2ACB1D1C16D6275B0003E572 /* Build configuration list for PBXNativeTarget "PLImageManagerSpecs" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2A11C63616C4EDFB00510459 /* Debug */,
-				2A11C63716C4EDFB00510459 /* Release */,
+				2ACB1D1D16D6275B0003E572 /* Debug */,
+				2ACB1D1E16D6275B0003E572 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

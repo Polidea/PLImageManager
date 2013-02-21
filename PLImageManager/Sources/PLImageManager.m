@@ -33,8 +33,14 @@
 
 //Uncomment this flags to alter the image manager for debugging and development
 //#define PLIMAGEMANAGER_METRICS
-//#define PLIMAGEMANAGER_SINGULARDOWNLOADS
+// #define PLIMAGEMANAGER_SINGULARDOWNLOADS
 //#define PLIMAGEMANAGER_CLEARONSTARTUP
+
+@interface PLImageManager ()
+
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache;
+
+@end
 
 @implementation PLImageManager {
 @private
@@ -44,9 +50,17 @@
     id<PLImageManagerProvider> provider;
 }
 
-- (id)initWithProvider:(id<PLImageManagerProvider>)aProvider; {
+- (id)initWithProvider:(id<PLImageManagerProvider>)aProvider {
+    return [self initWithProvider:aProvider cache:[PLImageCache new]];
+}
+
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache {
     self = [super init];
     if (self) {
+        if (aProvider == nil) {
+            @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:@"A valid provider is missing" userInfo:nil];
+        }
+
         provider = aProvider;
 
         imageIOQueue = [NSOperationQueue new];
@@ -54,14 +68,14 @@
         imageIOQueue.maxConcurrentOperationCount = 1;
         imageDownloadQueue = [NSOperationQueue new];
         imageDownloadQueue.name = @"plimagemanager.imagedownload";
-        #ifdef PLIMAGEMANAGER_SINGULARDOWNLOADS
+#ifdef PLIMAGEMANAGER_SINGULARDOWNLOADS
         imageDownloadQueue.maxConcurrentOperationCount = 1;
         #else
         imageDownloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
-        #endif
+#endif
 
-        imageCache = [PLImageCache new];
-        #ifdef PLIMAGEMANAGER_CLEARONSTARTUP
+        imageCache = aCache;
+#ifdef PLIMAGEMANAGER_CLEARONSTARTUP
         [imageCache clearFileCache];
         [imageCache clearMemoryCache];
         #endif

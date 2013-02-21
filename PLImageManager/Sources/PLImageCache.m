@@ -32,6 +32,8 @@
 
 @interface PLImageCache ()
 
+- (id)initWithCache:(NSCache *)cache fileManager:(NSFileManager *)manager;
+
 - (NSString *)filePathForKey:(NSString *)key;
 - (void)validateKey:(NSString *)key;
 - (NSURL *)imageCacheDirectory;
@@ -41,13 +43,20 @@
 @implementation PLImageCache {
 @private
     NSCache *memoryCache;
+    NSFileManager * fileManager;
 }
 
 - (id)init {
+    NSCache * cache = [[NSCache alloc] init];
+    cache.name = @"PLImageCache";
+    return [self initWithCache:cache fileManager:[NSFileManager defaultManager]];
+}
+
+- (id)initWithCache:(NSCache *)cache fileManager:(NSFileManager *)manager {
     self = [super init];
     if (self) {
-        memoryCache = [[NSCache alloc] init];
-        memoryCache.name = @"PLImageCache";
+        fileManager = manager;
+        memoryCache = cache;
     }
 
     return self;
@@ -76,19 +85,15 @@
 
     if (image == nil) {
         [memoryCache removeObjectForKey:key];
-        [[NSFileManager defaultManager] removeItemAtPath:filePath error:NULL];
+        [fileManager removeItemAtPath:filePath error:NULL];
     } else {
         [memoryCache setObject:image forKey:key];
-        [[NSFileManager defaultManager] createFileAtPath:filePath contents:UIImagePNGRepresentation(image) attributes:nil];
+        [fileManager createFileAtPath:filePath contents:UIImagePNGRepresentation(image) attributes:nil];
     }
 }
 
 - (void)removeImageWithKey:(NSString *)key {
-    [self validateKey:key];
-
-    NSString * filePath = [self filePathForKey:key];
-    [memoryCache removeObjectForKey:key];
-    [[NSFileManager defaultManager] removeItemAtPath:filePath error:NULL];
+    [self set:nil forKey:key];
 }
 
 - (void)clearMemoryCache {
@@ -96,7 +101,7 @@
 }
 
 - (void)clearFileCache {
-    [[NSFileManager defaultManager] removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
+    [fileManager removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
 }
 
 
@@ -113,13 +118,12 @@
 - (NSURL *)imageCacheDirectory {
     static NSURL *cacheDirectory;
     if (cacheDirectory == nil) {
-        NSFileManager *fileMgr = [NSFileManager defaultManager];
-        NSArray *urls = [fileMgr URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+        NSArray *urls = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
         NSURL *libraryUrl = [urls count] > 0 ? [urls objectAtIndex:0] : nil;
 
         if (libraryUrl != nil) {
             cacheDirectory = [[libraryUrl URLByAppendingPathComponent:@"Caches"] URLByAppendingPathComponent:@"PLImageCache"];
-            [fileMgr createDirectoryAtPath:[cacheDirectory path] withIntermediateDirectories:YES attributes:nil error:NULL];
+            [fileManager createDirectoryAtPath:[cacheDirectory path] withIntermediateDirectories:YES attributes:nil error:NULL];
         }
     }
     return cacheDirectory;
