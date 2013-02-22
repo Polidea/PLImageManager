@@ -85,7 +85,8 @@
 }
 
 - (void)imageForIdentifier:(id<NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
-    if (![identifier isKindOfClass:[provider identifierClass]]){
+    Class identifierClass = [provider identifierClass];
+    if (![identifier isKindOfClass:identifierClass]){
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
     }
 
