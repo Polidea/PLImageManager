@@ -79,7 +79,14 @@ describe(@"PLImageManager", ^{
             });
 
             it(@"to download the image", ^{
+                NSThread * const callThread = [NSThread currentThread];
+
                 [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow path
+                [providerMock stub:@selector(downloadImageWithIdentifier:error:)
+                      withBlock:^id(NSArray *params) {
+                          [[[NSThread currentThread] shouldNot] equal:callThread];
+                          return nil;
+                      }];
 
                 [[providerMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(downloadImageWithIdentifier:error:)];
 
@@ -99,9 +106,18 @@ describe(@"PLImageManager", ^{
             });
 
             it(@"for image on the file system (not on the calling thread)", ^{
-                [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow path
+                NSThread * const callThread = [NSThread currentThread];
+                [cacheMock stub:@selector(getWithKey:onlyMemoryCache:)
+                      withBlock:^id(NSArray *params) {
+                          if ([[params objectAtIndex:1] boolValue] == YES){
+                              return nil;
+                          } else  {
+                              [[[NSThread currentThread] shouldNot] equal:callThread];
+                              return nil;
+                          }
+                      }];
                 [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
-                //TODO: implement thread check
+
                 [[cacheMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(getWithKey:onlyMemoryCache:) withArguments:identifier, theValue(NO)];
 
                 [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
