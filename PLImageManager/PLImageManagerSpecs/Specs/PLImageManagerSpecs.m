@@ -3,6 +3,7 @@
 #import "PLImageCache.h"
 #import "UIImage+RandomImage.h"
 #include <libkern/OSAtomic.h>
+#import <OCMock-iPhone/OCMArg.h>
 
 @interface PLImageManager ()
 
@@ -16,7 +17,7 @@ describe(@"PLImageManager", ^{
     __block UIImage * quickImage;
 
     beforeAll(^{
-        quickImage = [UIImage randomImage];
+        quickImage = [UIImage randomImageWithSize:CGSizeMake(32, 32)];
     });
 
     describe(@"during creation", ^{
@@ -56,20 +57,17 @@ describe(@"PLImageManager", ^{
             }];
         });
 
-        describe(@"each image", ^{
+        describe(@"a image", ^{
             __block NSString * identifier = @"example_id";
 
             beforeEach(^{
                 [providerMock stub:@selector(keyForIdentifier:) andReturn:identifier];
                 [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(1)];
+                [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:quickImage]; //force quick path
                 imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
             });
 
             describe(@"should ask the provider", ^{
-                beforeAll(^{
-                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:quickImage]; //force quick path
-                });
-
                 it(@"for the identifier class", ^{
                     [[[providerMock should] receive] identifierClass];
 
@@ -90,7 +88,7 @@ describe(@"PLImageManager", ^{
                 it(@"to download the image", ^{
                     NSThread * const callThread = [NSThread currentThread];
 
-                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow path
+                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
                     [providerMock stub:@selector(downloadImageWithIdentifier:error:)
                              withBlock:^id(NSArray *params) {
                                  [[[NSThread currentThread] shouldNot] equal:callThread];
@@ -104,10 +102,6 @@ describe(@"PLImageManager", ^{
             });
 
             describe(@"should ask the cache", ^{
-                beforeAll(^{
-                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:quickImage]; //force quick path
-                });
-
                 it(@"for images already in memory)", ^{
                     [[cacheMock should] receive:@selector(getWithKey:onlyMemoryCache:) withArguments:identifier, theValue(YES)];
 
@@ -116,6 +110,7 @@ describe(@"PLImageManager", ^{
 
                 it(@"for image on the file system (not on the calling thread)", ^{
                     NSThread * const callThread = [NSThread currentThread];
+
                     [cacheMock stub:@selector(getWithKey:onlyMemoryCache:)
                           withBlock:^id(NSArray *params) {
                               if ([[params objectAtIndex:1] boolValue] == YES){
@@ -130,6 +125,87 @@ describe(@"PLImageManager", ^{
                     [[cacheMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(getWithKey:onlyMemoryCache:) withArguments:identifier, theValue(NO)];
 
                     [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
+                });
+            });
+
+            describe(@"should use the notification callback", ^{
+                __block UIImage * placeholderImage;
+
+                beforeAll(^{
+                    placeholderImage = [UIImage randomImageWithSize:CGSizeMake(16, 16)];
+                });
+
+                it(@"in quick flow scenario", ^{
+                    __block BOOL wasCalled = NO;
+                    [imageManager imageForIdentifier:identifier
+                                         placeholder:placeholderImage
+                                            callback:^(UIImage *image, BOOL isPlaceholder) {
+                                                wasCalled = YES;
+                                                [[image should] equal:quickImage];
+                                                [[theValue(isPlaceholder) should] equal:theValue(NO)];
+                                            }];
+
+                    //should be called synchronously => at this point already executed
+                    [[theValue(wasCalled) should] equal:theValue(YES)];
+                });
+
+                it(@"in slow path (file) scenario", ^{
+                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) withBlock:^id(NSArray *params) {
+                        if ([[params objectAtIndex:1] boolValue] == YES){
+                            return nil;
+                        } else {
+                            return quickImage;
+                        }
+                    }];
+//                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil withArguments:identifier, @(YES), nil];
+//                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:quickImage withArguments:identifier, @(NO), nil];
+                    __block NSUInteger numberOfCalls = 0;
+                    __block UIImage * catchedImage;
+                    __block BOOL catchedIsPlaceholder;
+
+                    [imageManager imageForIdentifier:identifier
+                                         placeholder:placeholderImage
+                                            callback:^(UIImage *image, BOOL isPlaceholder) {
+                                                ++numberOfCalls;
+                                                if (numberOfCalls == 1){
+                                                    [[image should] equal:placeholderImage];
+                                                    [[theValue(isPlaceholder) shouldNot] equal:theValue(NO)];
+                                                } else {
+                                                    catchedImage = image;
+                                                    catchedIsPlaceholder = isPlaceholder;
+                                                }
+                                            }];
+
+                    [[theValue(numberOfCalls) should] equal:theValue(1)]; //placeholder invocation
+
+                    [[expectFutureValue(catchedImage) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:quickImage];
+                    [[expectFutureValue(theValue(catchedIsPlaceholder)) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:theValue(NO)];
+                });
+
+                it(@"in slow path (network) scenario", ^{
+                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
+                    [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
+                    __block NSUInteger numberOfCalls = 0;
+                    __block UIImage * catchedImage;
+                    __block BOOL catchedIsPlaceholder;
+
+                    [imageManager imageForIdentifier:identifier
+                                         placeholder:placeholderImage
+                                            callback:^(UIImage *image, BOOL isPlaceholder) {
+                                                ++numberOfCalls;
+                                                if (numberOfCalls == 1){
+                                                    [[image should] equal:placeholderImage];
+                                                    [[theValue(isPlaceholder) should] equal:theValue(YES)];
+                                                } else {
+                                                    catchedImage = image;
+                                                    catchedIsPlaceholder = isPlaceholder;
+                                                }
+                                            }];
+
+                    [[theValue(numberOfCalls) should] equal:theValue(1)]; //placeholder invocation
+
+                    [[expectFutureValue(catchedImage) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:quickImage];
+                    [[expectFutureValue(theValue(catchedIsPlaceholder)) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:theValue(NO)];
                 });
             });
         });
@@ -147,7 +223,6 @@ describe(@"PLImageManager", ^{
                 downloadLock = [NSCondition new];
                 checkerLock = [NSCondition new];
                 [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
-                    NSLog(@"donwload start: %@", [params objectAtIndex:0]);
                     OSAtomicIncrement32(&runningDownloads);
                     //notify checker
                     [checkerLock lock];
@@ -165,8 +240,6 @@ describe(@"PLImageManager", ^{
                     [checkerLock lock];
                     [checkerLock signal];
                     [checkerLock unlock];
-
-                    NSLog(@"donwload finished: %@", [params objectAtIndex:0]);
 
                     return nil;
                 }];
