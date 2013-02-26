@@ -31,10 +31,6 @@
 #import "PLImageCache.h"
 #import "PLImageReadOperation.h"
 
-//Uncomment this flags to alter the image manager for debugging and development
-//#define PLIMAGEMANAGER_METRICS
-// #define PLIMAGEMANAGER_SINGULARDOWNLOADS
-//#define PLIMAGEMANAGER_CLEARONSTARTUP
 
 @interface PLImageManager ()
 
@@ -47,13 +43,14 @@
     NSOperationQueue *imageIOQueue;
     NSOperationQueue *imageDownloadQueue;
     PLImageCache *imageCache;
-    id<PLImageManagerProvider> provider;
+    id <PLImageManagerProvider> provider;
 }
 
-- (id)initWithProvider:(id<PLImageManagerProvider>)aProvider {
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider {
     return [self initWithProvider:aProvider cache:[PLImageCache new]];
 }
 
+//Note: this constructor is used by tests
 - (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache {
     self = [super init];
     if (self) {
@@ -68,62 +65,61 @@
         imageIOQueue.maxConcurrentOperationCount = 1;
         imageDownloadQueue = [NSOperationQueue new];
         imageDownloadQueue.name = @"plimagemanager.imagedownload";
-#ifdef PLIMAGEMANAGER_SINGULARDOWNLOADS
-        imageDownloadQueue.maxConcurrentOperationCount = 1;
-        #else
         imageDownloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
-#endif
 
         imageCache = aCache;
-#ifdef PLIMAGEMANAGER_CLEARONSTARTUP
-        [imageCache clearFileCache];
-        [imageCache clearMemoryCache];
-        #endif
     }
 
     return self;
 }
 
-- (void)imageForIdentifier:(id<NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
+- (void)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
     Class identifierClass = [provider identifierClass];
-    if (![identifier isKindOfClass:identifierClass]){
+    if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
     }
 
     NSString *const cacheKey = [provider keyForIdentifier:identifier];
 
     void (^notifyBlock)(UIImage *, BOOL) = ^(UIImage *image, BOOL isPlaceholder) {
-        if (callback == nil){
+        if (callback == nil) {
             return;
         }
-        if ([NSThread currentThread] == [NSThread mainThread]){
+        if ([NSThread currentThread] == [NSThread mainThread]) {
             callback(image, isPlaceholder);
         } else {
+            //note: using NSThread would be nicer, but it doesn't support blocks so stick with GCD for now
             dispatch_async(dispatch_get_main_queue(), ^{
                 callback(image, isPlaceholder);
             });
         }
     };
 
+    //first: fast memory only cache path
     UIImage *memoryCachedImage = [imageCache getWithKey:cacheKey onlyMemoryCache:YES];
     if (memoryCachedImage != nil) {
-        #ifdef PLIMAGEMANAGER_METRICS
-        NSLog(@"quick path [%@]", identifier);
-        #endif
         notifyBlock(memoryCachedImage, NO);
         return;
     } else {
-        if (placeholder != nil){
+        if (placeholder != nil) {
             notifyBlock(placeholder, YES);
         }
     }
+
+    //second: file cache path
+    __weak __block PLImageReadOperation *weakFileReadOperation;
 
     PLImageReadOperation *fileReadOperation = [[PLImageReadOperation alloc] initWithKey:cacheKey workBlock:^UIImage * {
         return [imageCache getWithKey:cacheKey onlyMemoryCache:NO];
     }];
 
+    weakFileReadOperation = fileReadOperation;
+
     fileReadOperation.readyBlock = ^(UIImage *image) {
-        if (image == nil) {
+        if (image != nil) {
+            notifyBlock(image, NO);
+        } else {
+            //finally: network path
             __block PLImageReadOperation *downloadOperation = nil;
             @synchronized (imageDownloadQueue) {
                 for (PLImageReadOperation *op in imageDownloadQueue.operations) {
@@ -135,16 +131,10 @@
 
                 if (downloadOperation == nil) {
                     downloadOperation = [[PLImageReadOperation alloc] initWithKey:cacheKey workBlock:^UIImage * {
-                        NSError * error = NULL;
-                        #ifdef PLIMAGEMANAGER_METRICS
-                        NSTimeInterval delta = [NSDate timeIntervalSinceReferenceDate];
-                        #endif
+                        NSError *error = NULL;
                         UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
-                        #ifdef PLIMAGEMANAGER_METRICS
-                        NSLog(@"download path in %0.3f [%@]", ([NSDate timeIntervalSinceReferenceDate] - delta), identifier);
-                        #endif
 
-                        if (error){
+                        if (error) {
                             NSLog(@"Error downloading image: %@", error);
                         }
 
@@ -156,39 +146,51 @@
                                 [imageCache set:image forKey:cacheKey];
                             }];
                             storeOperation.queuePriority = NSOperationQueuePriorityHigh;
-                            [imageIOQueue addOperation:storeOperation];
+                            @synchronized (imageIOQueue) {
+                                [imageIOQueue addOperation:storeOperation];
+                            }
                         }
                     };
+                    downloadOperation.queuePriority = weakFileReadOperation.queuePriority;
                     [imageDownloadQueue addOperation:downloadOperation];
-                    #ifdef PLIMAGEMANAGER_METRICS
-                    NSLog(@"scheduled for download in %d [%@]", imageDownloadQueue.operationCount, identifier);
-                    #endif
+                } else {
+                    if (downloadOperation.queuePriority < weakFileReadOperation.queuePriority) {
+                        downloadOperation.queuePriority = weakFileReadOperation.queuePriority;
+                    }
                 }
             }
-            //no mather if this is a recycled or a new download operation, we reset its priority
-            downloadOperation.queuePriority = NSOperationQueuePriorityNormal;
 
             NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
                 notifyBlock(downloadOperation.image, NO);
             }];
             [notifyOperation addDependency:downloadOperation];
             notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-            [imageIOQueue addOperation:notifyOperation];
-        } else {
-            #ifdef PLIMAGEMANAGER_METRICS
-            NSLog(@"file path [%@]", identifier);
-            #endif
-            notifyBlock(image, NO);
+            @synchronized (imageIOQueue) {
+                [imageIOQueue addOperation:notifyOperation];
+            }
         }
     };
-    [imageIOQueue addOperation:fileReadOperation];
+    @synchronized (imageIOQueue) {
+        [imageIOQueue addOperation:fileReadOperation];
+    }
 }
 
-- (void)deprioritizeDownloads {
+- (void)deferCurrentDownloads {
+    @synchronized (imageIOQueue) {
+        [imageIOQueue setSuspended:YES];
+        for (NSOperation *op in imageIOQueue.operations) {
+            if ([op isKindOfClass:[PLImageReadOperation class]]) {
+                op.queuePriority = NSOperationQueuePriorityLow;
+            }
+        }
+        [imageIOQueue setSuspended:NO];
+    }
     @synchronized (imageDownloadQueue) {
-        for (PLImageReadOperation *op in imageDownloadQueue.operations){
+        [imageDownloadQueue setSuspended:YES];
+        for (PLImageReadOperation *op in imageDownloadQueue.operations) {
             op.queuePriority = NSOperationQueuePriorityLow;
         }
+        [imageDownloadQueue setSuspended:NO];
     }
 }
 

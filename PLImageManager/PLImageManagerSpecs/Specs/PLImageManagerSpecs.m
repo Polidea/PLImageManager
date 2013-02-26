@@ -211,14 +211,15 @@ describe(@"PLImageManager", ^{
         });
 
         describe(@"multiple images simultanously", ^{
-            __block NSString * identifierTemplate = @"example_%d";
-            NSUInteger const maxDownloadCount = 5;
-            __block NSCondition *downloadLock;
-            __block NSCondition *checkerLock;
-            __block NSInteger runningDownloads;
-            __block NSInteger downloadsLeft;
+            it(@"should download all of them(on not more then maxConcurrentDownloadsCount threads)", ^{
+                //configuration
+                __block NSString *identifierTemplate = @"example_%d";
+                NSUInteger const maxDownloadCount = 5;
+                __block NSCondition *downloadLock;
+                __block NSCondition *checkerLock;
+                __block NSInteger runningDownloads = 0;
+                __block NSInteger downloadsLeft = 10;
 
-            beforeEach(^{
                 [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(maxDownloadCount)];
                 downloadLock = [NSCondition new];
                 checkerLock = [NSCondition new];
@@ -244,9 +245,23 @@ describe(@"PLImageManager", ^{
                     return nil;
                 }];
                 imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
-            });
 
-            afterEach(^{
+                //test
+                [checkerLock lock];
+                for (int i = downloadsLeft; i > 0; --i) {
+                    [imageManager imageForIdentifier:[NSString stringWithFormat:identifierTemplate, i]
+                                         placeholder:nil callback:nil];
+                }
+                [checkerLock unlock];
+
+                while (downloadsLeft > 0) {
+                    [checkerLock lock];
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]]) should] equal:theValue(YES)];//should be signaled
+                    [[theValue(runningDownloads) should] beLessThanOrEqualTo:theValue(maxDownloadCount)];
+                    [checkerLock unlock];
+                }
+
+                //cleanup
                 [downloadLock lock];
                 [downloadLock broadcast];
                 [downloadLock unlock];
@@ -255,22 +270,119 @@ describe(@"PLImageManager", ^{
                 [checkerLock unlock];
             });
 
-            it(@"should download all of them(on not more then maxConcurrentDownloadsCount threads)", ^{
-                downloadsLeft = 10;
-                [checkerLock lock];
-                for (int i = downloadsLeft; i>0; --i){
-                    [imageManager imageForIdentifier:[NSString stringWithFormat:identifierTemplate, i]
-                                         placeholder:nil
-                                            callback:nil];
-                }
-                [checkerLock unlock];
+            describe(@"should download in", ^{
+                __block NSString *identifierTemplate = @"example_%d";
+                NSUInteger const maxDownloadCount = 1;
+                __block NSCondition *checkerLock;
+                __block NSCondition *downloadLock;
+                __block NSString *lastDownloaded;
 
-                while (downloadsLeft > 0){
+                beforeEach(^{
+                    [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(maxDownloadCount)];
+                    checkerLock = [NSCondition new];
+                    downloadLock = [NSCondition new];
+                    [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
+                        lastDownloaded = [params objectAtIndex:0];
+                        [downloadLock lock];
+                        [checkerLock lock];
+                        [checkerLock signal];
+                        [checkerLock unlock];
+                        [downloadLock wait];
+                        [downloadLock unlock];
+                        return nil;
+                    }];
+                    imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
+                });
+
+                afterEach(^{
+                    [downloadLock lock];
+                    [downloadLock broadcast];
+                    [downloadLock unlock];
                     [checkerLock lock];
-                    [[theValue(runningDownloads) should] beLessThanOrEqualTo:theValue(maxDownloadCount)];
-                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]]) should] equal:theValue(YES)];//should be signaled
+                    [checkerLock broadcast];
                     [checkerLock unlock];
-                }
+                });
+
+                it(@"FIFO order", ^{
+                    [checkerLock lock];
+                    [imageManager imageForIdentifier:@"0"
+                                         placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"1"
+                                         placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"2"
+                                         placeholder:nil callback:nil];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"0"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"1"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"2"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [checkerLock unlock];
+                });
+
+                //TODO: write a "weak" test for deferCurrentDownloads
+//                it(@"in FIFO order taking calls to 'deferCurrentDownloads' into account", ^{
+//                    [checkerLock lock];
+//                    [downloadLock lock];
+//                    [imageManager imageForIdentifier:@"a0"
+//                                         placeholder:nil callback:nil];
+//                    [imageManager imageForIdentifier:@"a1"
+//                                         placeholder:nil callback:nil];
+//                    [imageManager imageForIdentifier:@"a2"
+//                                         placeholder:nil callback:nil];
+//                    [downloadLock unlock];
+//
+//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                    [[lastDownloaded should] equal:@"a0"];
+//
+//                    [imageManager deferCurrentDownloads];
+//
+//                    [imageManager imageForIdentifier:@"b0"
+//                                         placeholder:nil callback:nil];
+//
+//                    [downloadLock lock];
+//                    [downloadLock signal];
+//                    [downloadLock unlock];
+//
+//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                    [[lastDownloaded should] equal:@"b0"];
+//
+//                    [downloadLock lock];
+//                    [downloadLock signal];
+//                    [downloadLock unlock];
+//
+//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                    [[lastDownloaded should] equal:@"a1"];
+//
+//                    [downloadLock lock];
+//                    [downloadLock signal];
+//                    [downloadLock unlock];
+//
+//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                    [[lastDownloaded should] equal:@"a2"];
+//
+//                    [downloadLock lock];
+//                    [downloadLock signal];
+//                    [downloadLock unlock];
+//
+//                    [checkerLock unlock];
+//                });
             });
         });
     });
