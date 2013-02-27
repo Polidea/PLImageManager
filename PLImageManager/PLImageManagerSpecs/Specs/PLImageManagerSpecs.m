@@ -337,52 +337,54 @@ describe(@"PLImageManager", ^{
                 });
 
                 //TODO: write a "weak" test for deferCurrentDownloads
-//                it(@"FIFO order taking calls to 'deferCurrentDownloads' into account", ^{
-//                    [checkerLock lock];
-//                    [downloadLock lock];
-//                    [imageManager imageForIdentifier:@"a0"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a1"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a2"
-//                                         placeholder:nil callback:nil];
-//                    [downloadLock unlock];
-//
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a0"];
-//
-//                    [imageManager deferCurrentDownloads];
-//
-//                    [imageManager imageForIdentifier:@"b0"
-//                                         placeholder:nil callback:nil];
-//
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
-//
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"b0"];
-//
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
-//
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a1"];
-//
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
-//
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a2"];
-//
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
-//
-//                    [checkerLock unlock];
-//                });
+                it(@"FIFO order taking calls to 'deferCurrentDownloads' into account", ^{
+                    [checkerLock lock];
+                    [downloadLock lock];
+                    [imageManager imageForIdentifier:@"a0"
+                                         placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"a1"
+                                         placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"a2"
+                                         placeholder:nil callback:nil];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"a0"];
+
+                    [imageManager deferCurrentDownloads];
+
+                    [imageManager imageForIdentifier:@"b0"
+                                         placeholder:nil callback:nil];
+
+                    [checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"b0"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"a1"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"a2"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [checkerLock unlock];
+                });
 
 //                describe(@"FIFO order taking cancels into account", ^{
 //                    it(@"for non-repeting requests", ^{

@@ -28,11 +28,12 @@
  */
 
 #import <Foundation/Foundation.h>
-
+#import <UIKit/UIKit.h>
 
 @interface PLImageManagerOperation : NSOperation
 
 @property (nonatomic, copy, readonly) NSString * key;
+@property (nonatomic, copy, readwrite) UIImage * image;
 
 -(id) initWithKey:(NSString *)key block:(void (^)())block;
 

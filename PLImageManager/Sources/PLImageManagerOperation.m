@@ -33,9 +33,11 @@
 @implementation PLImageManagerOperation {
     void (^block)();
     NSString *key;
+    UIImage *image;
 }
 
 @synthesize key = key;
+@synthesize image = image;
 
 - (id)initWithKey:(NSString *)aKey block:(void (^)())aBlock {
     self = [super init];
@@ -48,6 +50,9 @@
 }
 
 - (void)main {
+    if (self.isCancelled){
+        return;
+    }
     if (block) {
         block();
     } else {

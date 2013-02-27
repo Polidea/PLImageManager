@@ -33,21 +33,20 @@
 @implementation PLImageManagerLoadOperation {
 @private
     void (^readyBlock)(UIImage *);
-    UIImage *image;
 }
 @synthesize readyBlock = readyBlock;
-@synthesize image = image;
+
 
 - (id)initWithKey:(NSString *)aKey loadBlock:(UIImage * (^)())aLoadBlock {
     self = [super initWithKey:aKey block:^{
         if (aLoadBlock) {
-            image = aLoadBlock();
+            self.image = aLoadBlock();
         } else {
             NSLog(@"no work block was set");
         }
 
         if (readyBlock) {
-            readyBlock(image);
+            readyBlock(self.image);
         }
     }];
     if (self) {
