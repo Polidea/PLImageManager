@@ -27,17 +27,32 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
+#import "PLImageManagerOperation.h"
 
 
-@interface PLImageReadOperation : NSOperation
+@implementation PLImageManagerOperation {
+    void (^block)();
+    NSString *key;
+}
 
-@property (nonatomic, copy, readonly) NSString * key;
-@property (nonatomic, strong, readonly) UIImage * image;
+@synthesize key = key;
 
-@property (nonatomic, copy, readwrite) void (^readyBlock)(UIImage *);
+- (id)initWithKey:(NSString *)aKey block:(void (^)())aBlock {
+    self = [super init];
+    if (self) {
+        key = aKey;
+        block = aBlock;
+    }
 
--(id) initWithKey:(NSString *)key workBlock:(UIImage * (^)())workBlock;
+    return self;
+}
+
+- (void)main {
+    if (block) {
+        block();
+    } else {
+        NSLog(@"no work block was set");
+    }
+}
 
 @end

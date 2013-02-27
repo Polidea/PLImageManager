@@ -21,12 +21,14 @@
 		ABCA9092DB9AA8C0A83A86F7 /* NSString+SHA1.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */; };
 		ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */; };
 		ABCA91348A9A010A452EB599 /* UIImage+RandomImage.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */; };
+		ABCA92EA8A1BBEEB68BA9575 /* PLImageManagerOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9BA9E3717BDA6348EC3B /* PLImageManagerOperation.m */; };
 		ABCA93CBF68FCD87F8E7EBAE /* PLImageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA980C1A23986FE73C70D2 /* PLImageManager.m */; };
+		ABCA9553035AEBBD9047B9D3 /* PLImageManagerOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA96C46F5C81E382872F51 /* PLImageManagerOperation.h */; };
 		ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */; };
-		ABCA99822E94E12BB3A13B1C /* PLImageReadOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E72E7386AC5CAEF0E83 /* PLImageReadOperation.h */; };
+		ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */; };
 		ABCA9A24670B49930F07A2C6 /* NSString+SHA1.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */; };
 		ABCA9BA0C6097F9E7C6D90F7 /* PLImageManager.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */; };
-		ABCA9D4E4AE47E43E3E727ED /* PLImageReadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C589E5F49A0B4925CAF /* PLImageReadOperation.m */; };
+		ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */; };
 		ABCA9E19B40572AE53454119 /* PLImageCache.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */; };
 		ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */; };
 /* End PBXBuildFile section */
@@ -51,8 +53,9 @@
 				ABCA9092DB9AA8C0A83A86F7 /* NSString+SHA1.h in CopyFiles */,
 				ABCA904F6D2CA056E02C0277 /* PLImageCache.h in CopyFiles */,
 				ABCA9BA0C6097F9E7C6D90F7 /* PLImageManager.h in CopyFiles */,
-				ABCA99822E94E12BB3A13B1C /* PLImageReadOperation.h in CopyFiles */,
+				ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */,
 				ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */,
+				ABCA9553035AEBBD9047B9D3 /* PLImageManagerOperation.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,14 +76,16 @@
 		2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = "OCMock-iPhone.framework"; sourceTree = "<group>"; };
 		ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+RandomImage.m"; sourceTree = "<group>"; };
 		ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLURLImageProvider.h; sourceTree = "<group>"; };
+		ABCA96C46F5C81E382872F51 /* PLImageManagerOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManagerOperation.h; sourceTree = "<group>"; };
 		ABCA96C48D2F2A0936FF4D4B /* PLImageCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageCache.h; sourceTree = "<group>"; };
 		ABCA980C1A23986FE73C70D2 /* PLImageManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManager.m; sourceTree = "<group>"; };
 		ABCA999306AB0CA306459260 /* UIImage+RandomImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+RandomImage.h"; sourceTree = "<group>"; };
 		ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCache.m; sourceTree = "<group>"; };
+		ABCA9BA9E3717BDA6348EC3B /* PLImageManagerOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerOperation.m; sourceTree = "<group>"; };
 		ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLURLImageProvider.m; sourceTree = "<group>"; };
-		ABCA9C589E5F49A0B4925CAF /* PLImageReadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageReadOperation.m; sourceTree = "<group>"; };
+		ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerLoadOperation.m; sourceTree = "<group>"; };
 		ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+SHA1.m"; sourceTree = "<group>"; };
-		ABCA9E72E7386AC5CAEF0E83 /* PLImageReadOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageReadOperation.h; sourceTree = "<group>"; };
+		ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManagerLoadOperation.h; sourceTree = "<group>"; };
 		ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+SHA1.h"; sourceTree = "<group>"; };
 		ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManager.h; sourceTree = "<group>"; };
 		ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCacheSpecs.m; sourceTree = "<group>"; };
@@ -184,10 +189,12 @@
 				ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */,
 				ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */,
 				ABCA980C1A23986FE73C70D2 /* PLImageManager.m */,
-				ABCA9E72E7386AC5CAEF0E83 /* PLImageReadOperation.h */,
-				ABCA9C589E5F49A0B4925CAF /* PLImageReadOperation.m */,
+				ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */,
+				ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */,
 				ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */,
 				ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */,
+				ABCA9BA9E3717BDA6348EC3B /* PLImageManagerOperation.m */,
+				ABCA96C46F5C81E382872F51 /* PLImageManagerOperation.h */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -292,8 +299,9 @@
 				ABCA9A24670B49930F07A2C6 /* NSString+SHA1.m in Sources */,
 				ABCA9E19B40572AE53454119 /* PLImageCache.m in Sources */,
 				ABCA93CBF68FCD87F8E7EBAE /* PLImageManager.m in Sources */,
-				ABCA9D4E4AE47E43E3E727ED /* PLImageReadOperation.m in Sources */,
+				ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */,
 				ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */,
+				ABCA92EA8A1BBEEB68BA9575 /* PLImageManagerOperation.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,7 +361,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 			};
@@ -376,7 +384,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};

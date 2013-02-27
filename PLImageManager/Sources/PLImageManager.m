@@ -29,8 +29,7 @@
 
 #import "PLImageManager.h"
 #import "PLImageCache.h"
-#import "PLImageReadOperation.h"
-
+#import "PLImageManagerLoadOperation.h"
 
 @interface PLImageManager ()
 
@@ -40,8 +39,9 @@
 
 @implementation PLImageManager {
 @private
-    NSOperationQueue *imageIOQueue;
-    NSOperationQueue *imageDownloadQueue;
+    NSOperationQueue *ioQueue;
+    NSOperationQueue *downloadQueue;
+
     PLImageCache *imageCache;
     id <PLImageManagerProvider> provider;
 }
@@ -60,12 +60,12 @@
 
         provider = aProvider;
 
-        imageIOQueue = [NSOperationQueue new];
-        imageIOQueue.name = @"plimagemanager.imageio";
-        imageIOQueue.maxConcurrentOperationCount = 1;
-        imageDownloadQueue = [NSOperationQueue new];
-        imageDownloadQueue.name = @"plimagemanager.imagedownload";
-        imageDownloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
+        ioQueue = [NSOperationQueue new];
+        ioQueue.name = @"plimagemanager.io";
+        ioQueue.maxConcurrentOperationCount = 1;
+        downloadQueue = [NSOperationQueue new];
+        downloadQueue.name = @"plimagemanager.download";
+        downloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
 
         imageCache = aCache;
     }
@@ -107,9 +107,9 @@
     }
 
     //second: file cache path
-    __weak __block PLImageReadOperation *weakFileReadOperation;
+    __weak __block PLImageManagerLoadOperation *weakFileReadOperation;
 
-    PLImageReadOperation *fileReadOperation = [[PLImageReadOperation alloc] initWithKey:cacheKey workBlock:^UIImage * {
+    PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
         return [imageCache getWithKey:cacheKey onlyMemoryCache:NO];
     }];
 
@@ -120,9 +120,9 @@
             notifyBlock(image, NO);
         } else {
             //finally: network path
-            __block PLImageReadOperation *downloadOperation = nil;
-            @synchronized (imageDownloadQueue) {
-                for (PLImageReadOperation *op in imageDownloadQueue.operations) {
+            __block PLImageManagerLoadOperation *downloadOperation = nil;
+            @synchronized (downloadQueue) {
+                for (PLImageManagerLoadOperation *op in downloadQueue.operations) {
                     if ([op.key isEqualToString:cacheKey]) {
                         downloadOperation = op;
                         break;
@@ -130,7 +130,7 @@
                 }
 
                 if (downloadOperation == nil) {
-                    downloadOperation = [[PLImageReadOperation alloc] initWithKey:cacheKey workBlock:^UIImage * {
+                    downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
                         NSError *error = NULL;
                         UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
 
@@ -146,13 +146,13 @@
                                 [imageCache set:image forKey:cacheKey];
                             }];
                             storeOperation.queuePriority = NSOperationQueuePriorityHigh;
-                            @synchronized (imageIOQueue) {
-                                [imageIOQueue addOperation:storeOperation];
+                            @synchronized (ioQueue) {
+                                [ioQueue addOperation:storeOperation];
                             }
                         }
                     };
                     downloadOperation.queuePriority = weakFileReadOperation.queuePriority;
-                    [imageDownloadQueue addOperation:downloadOperation];
+                    [downloadQueue addOperation:downloadOperation];
                 } else {
                     if (downloadOperation.queuePriority < weakFileReadOperation.queuePriority) {
                         downloadOperation.queuePriority = weakFileReadOperation.queuePriority;
@@ -165,32 +165,32 @@
             }];
             [notifyOperation addDependency:downloadOperation];
             notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-            @synchronized (imageIOQueue) {
-                [imageIOQueue addOperation:notifyOperation];
+            @synchronized (ioQueue) {
+                [ioQueue addOperation:notifyOperation];
             }
         }
     };
-    @synchronized (imageIOQueue) {
-        [imageIOQueue addOperation:fileReadOperation];
+    @synchronized (ioQueue) {
+        [ioQueue addOperation:fileReadOperation];
     }
 }
 
 - (void)deferCurrentDownloads {
-    @synchronized (imageIOQueue) {
-        [imageIOQueue setSuspended:YES];
-        for (NSOperation *op in imageIOQueue.operations) {
-            if ([op isKindOfClass:[PLImageReadOperation class]]) {
+    @synchronized (ioQueue) {
+        [ioQueue setSuspended:YES];
+        for (NSOperation *op in ioQueue.operations) {
+            if ([op isKindOfClass:[PLImageManagerLoadOperation class]]) {
                 op.queuePriority = NSOperationQueuePriorityLow;
             }
         }
-        [imageIOQueue setSuspended:NO];
+        [ioQueue setSuspended:NO];
     }
-    @synchronized (imageDownloadQueue) {
-        [imageDownloadQueue setSuspended:YES];
-        for (PLImageReadOperation *op in imageDownloadQueue.operations) {
+    @synchronized (downloadQueue) {
+        [downloadQueue setSuspended:YES];
+        for (PLImageManagerLoadOperation *op in downloadQueue.operations) {
             op.queuePriority = NSOperationQueuePriorityLow;
         }
-        [imageDownloadQueue setSuspended:NO];
+        [downloadQueue setSuspended:NO];
     }
 }
 

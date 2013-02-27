@@ -27,40 +27,34 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "PLImageReadOperation.h"
+#import "PLImageManagerLoadOperation.h"
 
 
-@implementation PLImageReadOperation {
+@implementation PLImageManagerLoadOperation {
 @private
-    UIImage * (^workBlock)();
     void (^readyBlock)(UIImage *);
-    UIImage * image;
-    NSString * key;
+    UIImage *image;
 }
-@synthesize readyBlock;
-@synthesize image;
-@synthesize key = key;
+@synthesize readyBlock = readyBlock;
+@synthesize image = image;
 
--(id) initWithKey:(NSString *)aKey workBlock:(UIImage * (^)())aWorkBlock {
-    self = [super init];
+- (id)initWithKey:(NSString *)aKey loadBlock:(UIImage * (^)())aLoadBlock {
+    self = [super initWithKey:aKey block:^{
+        if (aLoadBlock) {
+            image = aLoadBlock();
+        } else {
+            NSLog(@"no work block was set");
+        }
+
+        if (readyBlock) {
+            readyBlock(image);
+        }
+    }];
     if (self) {
-        key = aKey;
-        workBlock = aWorkBlock;
+
     }
 
     return self;
-}
-
-- (void)main {
-    if (workBlock){
-        image = workBlock();
-    } else {
-        NSLog(@"no work block was set");
-    }
-
-    if (readyBlock){
-        readyBlock(image);
-    }
 }
 
 @end
