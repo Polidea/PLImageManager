@@ -28,11 +28,13 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "PLImageManagerOperation.h"
+#import <UIKit/UIKit.h>
 
+@interface PLImageManagerLoadOperation : NSOperation
 
-@interface PLImageManagerLoadOperation : PLImageManagerOperation
-
+@property (nonatomic, retain, readonly) NSString * key;
+@property (nonatomic, retain, readonly) UIImage * image;
+@property (nonatomic, retain, readwrite) NSString * opId;
 @property (nonatomic, copy, readwrite) void (^readyBlock)(UIImage *);
 
 -(id) initWithKey:(NSString *)key loadBlock:(UIImage * (^)())loadBlock;

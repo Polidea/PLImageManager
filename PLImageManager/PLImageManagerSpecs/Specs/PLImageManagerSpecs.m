@@ -346,6 +346,8 @@ describe(@"PLImageManager", ^{
                                          placeholder:nil callback:nil];
                     [imageManager imageForIdentifier:@"a2"
                                          placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"a3"
+                                         placeholder:nil callback:nil];
                     [downloadLock unlock];
 
                     [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
@@ -356,7 +358,7 @@ describe(@"PLImageManager", ^{
                     [imageManager imageForIdentifier:@"b0"
                                          placeholder:nil callback:nil];
 
-                    [checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+                    [checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
 
                     [downloadLock lock];
                     [downloadLock signal];
@@ -378,6 +380,13 @@ describe(@"PLImageManager", ^{
 
                     [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
                     [[lastDownloaded should] equal:@"a2"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"a3"];
 
                     [downloadLock lock];
                     [downloadLock signal];

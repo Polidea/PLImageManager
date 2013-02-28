@@ -42,10 +42,11 @@
     NSOperationQueue *ioQueue;
     NSOperationQueue *downloadQueue;
     NSOperationQueue *watchdogQueue;
-    NSOperationQueue *setupQueue;
 
     PLImageCache *imageCache;
     id <PLImageManagerProvider> provider;
+
+    NSMutableDictionary * watchdogDict;
 }
 
 - (id)initWithProvider:(id <PLImageManagerProvider>)aProvider {
@@ -70,10 +71,9 @@
         downloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
         watchdogQueue = [NSOperationQueue new];
         watchdogQueue.name = @"plimagemanager.watchdog";
+        watchdogQueue.maxConcurrentOperationCount = 1;
 
-        setupQueue = [NSOperationQueue new];
-        setupQueue.name = @"plimagemanager.setup";
-        setupQueue.maxConcurrentOperationCount = 1;
+        watchdogDict = [NSMutableDictionary new];
 
         imageCache = aCache;
     }
@@ -82,6 +82,7 @@
 }
 
 - (void)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
+    NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
     Class identifierClass = [provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
@@ -115,95 +116,95 @@
     }
 
     //second: file cache path
-    __weak __block NSOperation * weakSetupOperation = nil;
-    NSOperation * setupOperation = [NSBlockOperation blockOperationWithBlock:^{
-        PLImageManagerOperation *watchdogOp = nil;
-        @synchronized (watchdogQueue) {
-            for (PLImageManagerOperation *op in watchdogQueue.operations) {
-                if ([op.key isEqualToString:cacheKey]) {
-                    watchdogOp = op;
-                    break;
+    PLImageManagerLoadOperation *watchdogOp = nil;
+    __weak __block PLImageManagerLoadOperation *weakWatchdogOp = watchdogOp;
+    @synchronized (watchdogDict) {
+        watchdogOp = [watchdogDict objectForKey:cacheKey];
+        if (watchdogOp == nil) {
+            __weak __block PLImageManagerLoadOperation * weakDownloadOperation;
+            __weak __block PLImageManagerLoadOperation * weakFileReadOperation;
+
+            PLImageManagerLoadOperation *downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
+                NSError *error = NULL;
+                UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
+
+                if (error) {
+                    NSLog(@"Error downloading image: %@", error);
                 }
-            }
-            if (watchdogOp == nil) {
-                __weak __block PLImageManagerLoadOperation *weakFileReadOperation = nil;
-                __weak __block PLImageManagerLoadOperation *weakDownloadOperation = nil;
-                __weak __block PLImageManagerOperation *weakWatchdogOp = nil;
 
-                PLImageManagerLoadOperation *downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
-                    NSError *error = NULL;
-                    UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
+                return image;
+            }];
+            weakDownloadOperation = downloadOperation;
+            downloadOperation.opId = @"net";
 
-                    if (error) {
-                        NSLog(@"Error downloading image: %@", error);
-                    }
+            downloadOperation.readyBlock = ^(UIImage *image) {
+                if (image != nil) {
+                    NSBlockOperation *storeOperation = [NSBlockOperation blockOperationWithBlock:^{
+                        [imageCache set:image forKey:cacheKey];
+                    }];
+                    storeOperation.queuePriority = NSOperationQueuePriorityHigh;
+                    [ioQueue addOperation:storeOperation];
+                }
+            };
 
-                    return image;
-                }];
-                weakDownloadOperation = downloadOperation;
+            PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
+                return [imageCache getWithKey:cacheKey onlyMemoryCache:NO];
+            }];
+            weakFileReadOperation = fileReadOperation;
+            fileReadOperation.opId = @"file";
 
-                downloadOperation.readyBlock = ^(UIImage *image) {
-                    if (image != nil) {
-                        NSBlockOperation *storeOperation = [NSBlockOperation blockOperationWithBlock:^{
-                            [imageCache set:image forKey:cacheKey];
-                        }];
-                        storeOperation.queuePriority = NSOperationQueuePriorityHigh;
-                        [ioQueue addOperation:storeOperation];
-                    }
-                };
+            fileReadOperation.readyBlock = ^(UIImage *image) {
+                if (image != nil) {
+                    [weakDownloadOperation cancel];
+                }
+            };
 
-                PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage * {
-                    return [imageCache getWithKey:cacheKey onlyMemoryCache:NO];
-                }];
-                weakFileReadOperation = fileReadOperation;
+            watchdogOp = [[PLImageManagerLoadOperation alloc] initWithKey:cacheKey loadBlock:^UIImage *{
+                @synchronized (watchdogDict) {
+                    [watchdogDict removeObjectForKey:cacheKey];
+                }
+                if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
+                    [weakWatchdogOp cancel];
+                    return nil;
+                }
+                if (weakFileReadOperation.image != nil) {
+                    return weakFileReadOperation.image;
+                } else if (weakDownloadOperation.image != nil) {
+                    return weakDownloadOperation.image;
+                } else {
+                    return nil;
+                }
+            }];
+            watchdogOp.opId = @"wd";
 
+            [downloadOperation addDependency:fileReadOperation];
+            [watchdogOp addDependency:fileReadOperation];
+            [watchdogOp addDependency:downloadOperation];
 
-                fileReadOperation.readyBlock = ^(UIImage *image) {
-                    if (image != nil) {
-                        [weakDownloadOperation cancel];
-                    }
-                };
-
-                watchdogOp = [[PLImageManagerOperation alloc] initWithKey:cacheKey block:^{
-                    if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
-                        [weakWatchdogOp cancel];
-                    }
-                    if (weakFileReadOperation.image != nil){
-                        weakWatchdogOp.image = weakFileReadOperation.image;
-                    } else if (weakDownloadOperation.image != nil){
-                        weakWatchdogOp.image = weakDownloadOperation.image;
-                    }
-                }];
-                weakWatchdogOp = watchdogOp;
-                [downloadOperation addDependency:fileReadOperation];
-                [watchdogOp addDependency:fileReadOperation];
-                [watchdogOp addDependency:downloadOperation];
-
-                [downloadQueue addOperation:downloadOperation];
-                [ioQueue addOperation:fileReadOperation];
-                [watchdogQueue addOperation:watchdogOp];
-            }
+            [downloadQueue addOperation:downloadOperation];
+            [ioQueue addOperation:fileReadOperation];
+            [watchdogQueue addOperation:watchdogOp];
+            [watchdogDict setObject:watchdogOp forKey:cacheKey];
         }
-        __weak __block PLImageManagerOperation *weakWatchdogOp = watchdogOp;
+        weakWatchdogOp = watchdogOp;
+    }
 
-        NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
-            if (weakWatchdogOp.isCancelled){
-                return;
-            }
-            notifyBlock(weakWatchdogOp.image, NO);
-        }];
-        [notifyOperation addDependency:watchdogOp];
-        notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-        [[NSOperationQueue mainQueue] addOperation:notifyOperation];
+    NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
+        if (weakWatchdogOp.isCancelled) {
+            return;
+        }
+        notifyBlock(weakWatchdogOp.image, NO);
     }];
-    weakSetupOperation = setupOperation;
-    [setupQueue addOperation:setupOperation];
+    [notifyOperation addDependency:watchdogOp];
+    notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
+    [[NSOperationQueue mainQueue] addOperation:notifyOperation];
+    NSLog(@"request: %lf", [NSDate timeIntervalSinceReferenceDate] - startTime);
 }
 
 - (void)deferCurrentDownloads {
-    @synchronized (watchdogQueue) {
-        for (PLImageManagerOperation *op in watchdogQueue.operations) {
-            for (PLImageManagerOperation * dependentOp in op.dependencies){
+    @synchronized (watchdogDict) {
+        for (PLImageManagerLoadOperation *op in [watchdogDict allValues]) {
+            for (PLImageManagerLoadOperation * dependentOp in op.dependencies){
                 dependentOp.queuePriority = NSOperationQueuePriorityLow;
             }
         }

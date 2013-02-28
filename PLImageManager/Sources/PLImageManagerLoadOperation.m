@@ -29,31 +29,39 @@
 
 #import "PLImageManagerLoadOperation.h"
 
-
 @implementation PLImageManagerLoadOperation {
 @private
+    UIImage * (^loadBlock)();
+    NSString *key;
+    UIImage *image;
     void (^readyBlock)(UIImage *);
 }
+
+@synthesize key = key;
+@synthesize image = image;
 @synthesize readyBlock = readyBlock;
+@synthesize opId;
 
 
 - (id)initWithKey:(NSString *)aKey loadBlock:(UIImage * (^)())aLoadBlock {
-    self = [super initWithKey:aKey block:^{
-        if (aLoadBlock) {
-            self.image = aLoadBlock();
-        } else {
-            NSLog(@"no work block was set");
-        }
-
-        if (readyBlock) {
-            readyBlock(self.image);
-        }
-    }];
+    self = [super init];
     if (self) {
-
+        key = aKey;
+        loadBlock = aLoadBlock;
     }
 
     return self;
+}
+
+- (void)main {
+    if (self.isCancelled){
+        return;
+    }
+    if (loadBlock) {
+        image = loadBlock();
+    } else {
+        NSLog(@"no work block was set");
+    }
 }
 
 @end
