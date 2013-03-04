@@ -32,6 +32,7 @@
 
 @class PLImageCache;
 @protocol PLImageManagerProvider;
+@class PLImageManagerRequestToken;
 
 /**
 * PLImageManager is a sophisticated and extensible image manager. It covers the part of the job that is common for most use cases.
@@ -62,7 +63,7 @@
 * b) file cache path and network path: asynchronously when the image is available. Additionally, if a placeholder is provided, the callback will be called synchronously with it before returning from the method.
 * c) in case of error the callback will be called with nil as the image parameter.
 */
-- (void)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback;
+- (PLImageManagerRequestToken*)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback;
 
 - (void)deferCurrentDownloads;
 
@@ -79,5 +80,15 @@
 - (NSString *)keyForIdentifier:(id <NSObject>)identifier;
 
 - (UIImage *)downloadImageWithIdentifier:(id <NSObject>)identifier error:(NSError **)error;
+
+@end
+
+@interface PLImageManagerRequestToken : NSObject
+
+@property (nonatomic, strong, readonly) NSString * key;
+@property (nonatomic, assign, readonly) BOOL isCanceled;
+@property (nonatomic, assign, readonly) BOOL isReady;
+
+-(void) cancel;
 
 @end

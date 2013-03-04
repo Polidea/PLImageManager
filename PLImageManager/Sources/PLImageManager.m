@@ -37,6 +37,13 @@
 
 @end
 
+@interface PLImageManagerRequestToken ()
+
+- (id)initWithKey:(NSString *)aKey;
+- (void)markReady;
+
+@end
+
 @implementation PLImageManager {
 @private
     NSOperationQueue *ioQueue;
@@ -81,7 +88,7 @@
     return self;
 }
 
-- (void)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
+- (PLImageManagerRequestToken *)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
     NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
     Class identifierClass = [provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
@@ -89,6 +96,8 @@
     }
 
     NSString *const opKey = [provider keyForIdentifier:identifier];
+
+    PLImageManagerRequestToken *token = [[PLImageManagerRequestToken alloc] initWithKey:opKey];
 
     void (^notifyBlock)(UIImage *, BOOL) = ^(UIImage *image, BOOL isPlaceholder) {
         if (callback == nil) {
@@ -108,96 +117,97 @@
     UIImage *memoryCachedImage = [imageCache getWithKey:opKey onlyMemoryCache:YES];
     if (memoryCachedImage != nil) {
         notifyBlock(memoryCachedImage, NO);
-        return;
     } else {
         if (placeholder != nil) {
             notifyBlock(placeholder, YES);
         }
+
+        //second: slow paths
+        PLImageManagerLoadOperation *sentinelOp = nil;
+        __weak __block PLImageManagerLoadOperation *weakSentinelOp;
+        @synchronized (sentinelDict) {
+            sentinelOp = [sentinelDict objectForKey:opKey];
+            if (sentinelOp == nil) {
+                __weak __block PLImageManagerLoadOperation *weakDownloadOperation;
+                __weak __block PLImageManagerLoadOperation *weakFileReadOperation;
+
+                PLImageManagerLoadOperation *downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
+                    NSError *error = NULL;
+                    UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
+
+                    if (error) {
+                        NSLog(@"Error downloading image: %@", error);
+                    }
+
+                    return image;
+                }];
+                weakDownloadOperation = downloadOperation;
+                downloadOperation.opId = @"net";
+
+                downloadOperation.readyBlock = ^(UIImage *image) {
+                    if (image != nil) {
+                        NSBlockOperation *storeOperation = [NSBlockOperation blockOperationWithBlock:^{
+                            [imageCache set:image forKey:opKey];
+                        }];
+                        storeOperation.queuePriority = NSOperationQueuePriorityHigh;
+                        [ioQueue addOperation:storeOperation];
+                    }
+                };
+
+                PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
+                    return [imageCache getWithKey:opKey onlyMemoryCache:NO];
+                }];
+                weakFileReadOperation = fileReadOperation;
+                fileReadOperation.opId = @"file";
+
+                fileReadOperation.readyBlock = ^(UIImage *image) {
+                    if (image != nil) {
+                        [weakDownloadOperation cancel];
+                    }
+                };
+
+                sentinelOp = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
+                    @synchronized (sentinelDict) {
+                        [sentinelDict removeObjectForKey:opKey];
+                    }
+                    if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
+                        [weakSentinelOp cancel];
+                        return nil;
+                    }
+                    if (weakFileReadOperation.image != nil) {
+                        return weakFileReadOperation.image;
+                    } else if (weakDownloadOperation.image != nil) {
+                        return weakDownloadOperation.image;
+                    } else {
+                        return nil;
+                    }
+                }];
+                sentinelOp.opId = @"sentinel";
+
+                [downloadOperation addDependency:fileReadOperation];
+                [sentinelOp addDependency:fileReadOperation];
+                [sentinelOp addDependency:downloadOperation];
+
+                [downloadQueue addOperation:downloadOperation];
+                [ioQueue addOperation:fileReadOperation];
+                [sentinelQueue addOperation:sentinelOp];
+                [sentinelDict setObject:sentinelOp forKey:opKey];
+            }
+            weakSentinelOp = sentinelOp;
+        }
+
+        NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
+            if (weakSentinelOp.isCancelled) {
+                return;
+            }
+            notifyBlock(weakSentinelOp.image, NO);
+        }];
+        [notifyOperation addDependency:sentinelOp];
+        notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
+        [[NSOperationQueue mainQueue] addOperation:notifyOperation];
     }
 
-    //second: slow paths
-    PLImageManagerLoadOperation *sentinelOp = nil;
-    __weak __block PLImageManagerLoadOperation *weakSentinelOp;
-    @synchronized (sentinelDict) {
-        sentinelOp = [sentinelDict objectForKey:opKey];
-        if (sentinelOp == nil) {
-            __weak __block PLImageManagerLoadOperation *weakDownloadOperation;
-            __weak __block PLImageManagerLoadOperation *weakFileReadOperation;
-
-            PLImageManagerLoadOperation *downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
-                NSError *error = NULL;
-                UIImage *image = [provider downloadImageWithIdentifier:identifier error:&error];
-
-                if (error) {
-                    NSLog(@"Error downloading image: %@", error);
-                }
-
-                return image;
-            }];
-            weakDownloadOperation = downloadOperation;
-            downloadOperation.opId = @"net";
-
-            downloadOperation.readyBlock = ^(UIImage *image) {
-                if (image != nil) {
-                    NSBlockOperation *storeOperation = [NSBlockOperation blockOperationWithBlock:^{
-                        [imageCache set:image forKey:opKey];
-                    }];
-                    storeOperation.queuePriority = NSOperationQueuePriorityHigh;
-                    [ioQueue addOperation:storeOperation];
-                }
-            };
-
-            PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
-                return [imageCache getWithKey:opKey onlyMemoryCache:NO];
-            }];
-            weakFileReadOperation = fileReadOperation;
-            fileReadOperation.opId = @"file";
-
-            fileReadOperation.readyBlock = ^(UIImage *image) {
-                if (image != nil) {
-                    [weakDownloadOperation cancel];
-                }
-            };
-
-            sentinelOp = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
-                @synchronized (sentinelDict) {
-                    [sentinelDict removeObjectForKey:opKey];
-                }
-                if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
-                    [weakSentinelOp cancel];
-                    return nil;
-                }
-                if (weakFileReadOperation.image != nil) {
-                    return weakFileReadOperation.image;
-                } else if (weakDownloadOperation.image != nil) {
-                    return weakDownloadOperation.image;
-                } else {
-                    return nil;
-                }
-            }];
-            sentinelOp.opId = @"sentinel";
-
-            [downloadOperation addDependency:fileReadOperation];
-            [sentinelOp addDependency:fileReadOperation];
-            [sentinelOp addDependency:downloadOperation];
-
-            [downloadQueue addOperation:downloadOperation];
-            [ioQueue addOperation:fileReadOperation];
-            [sentinelQueue addOperation:sentinelOp];
-            [sentinelDict setObject:sentinelOp forKey:opKey];
-        }
-        weakSentinelOp = sentinelOp;
-    }
-
-    NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
-        if (weakSentinelOp.isCancelled) {
-            return;
-        }
-        notifyBlock(weakSentinelOp.image, NO);
-    }];
-    [notifyOperation addDependency:sentinelOp];
-    notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-    [[NSOperationQueue mainQueue] addOperation:notifyOperation];
+    return nil;
 }
 
 - (void)deferCurrentDownloads {
@@ -212,6 +222,44 @@
 
 - (void)clearCache {
     [imageCache clearMemoryCache];
+}
+
+@end
+
+@implementation PLImageManagerRequestToken {
+
+}
+
+@synthesize key = key;
+@synthesize isCanceled = isCanceled;
+@synthesize isReady = isReady;
+
+- (id)initWithKey:(NSString *)aKey {
+    self = [super init];
+    if (self) {
+        key = aKey;
+        isCanceled = NO;
+        isReady = NO;
+    }
+    return self;
+}
+
+- (void)markReady {
+    if (isCanceled){
+        return;
+    }
+    isReady = YES;
+}
+
+- (BOOL)isReady {
+    return isReady;
+}
+
+- (void)cancel {
+    if (isCanceled) {
+        return;
+    }
+    isCanceled = YES;
 }
 
 @end
