@@ -198,7 +198,6 @@
     [notifyOperation addDependency:sentinelOp];
     notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
     [[NSOperationQueue mainQueue] addOperation:notifyOperation];
-    NSLog(@"request: %lf", [NSDate timeIntervalSinceReferenceDate] - startTime);
 }
 
 - (void)deferCurrentDownloads {

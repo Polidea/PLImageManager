@@ -208,6 +208,56 @@ describe(@"PLImageManager", ^{
                     [[expectFutureValue(theValue(catchedIsPlaceholder)) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:theValue(NO)];
                 });
             });
+
+            describe(@"should not take longer then 10ms for the call to imageForIdentifier:placeholder:callback:", ^{
+                __block UIImage *placeholderImage;
+                NSUInteger const numberOfCycles = 10;
+                NSTimeInterval const timeout = 0.01;
+
+                beforeAll(^{
+                    placeholderImage = [UIImage randomImageWithSize:CGSizeMake(16, 16)];
+                });
+
+                it(@"in quick flow scenario", ^{
+                    for(int i = 0; i < numberOfCycles; ++i){
+                        NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
+                        [imageManager imageForIdentifier:identifier
+                                             placeholder:placeholderImage
+                                                callback:nil];
+                        [[theValue([NSDate timeIntervalSinceReferenceDate] - startTime) should] beLessThanOrEqualTo:theValue(timeout)];
+                    }
+                });
+
+                it(@"in slow path (file) scenario", ^{
+                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) withBlock:^id(NSArray *params) {
+                        if ([[params objectAtIndex:1] boolValue] == YES) {
+                            return nil;
+                        } else {
+                            return quickImage;
+                        }
+                    }];
+                    for(int i = 0; i < numberOfCycles; ++i){
+                        NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
+                        [imageManager imageForIdentifier:identifier
+                                             placeholder:placeholderImage
+                                                callback:nil];
+                        [[theValue([NSDate timeIntervalSinceReferenceDate] - startTime) should] beLessThanOrEqualTo:theValue(timeout)];
+                    }
+                });
+
+                it(@"in slow path (network) scenario", ^{
+                    [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
+                    [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
+
+                    for(int i = 0; i < numberOfCycles; ++i){
+                        NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
+                        [imageManager imageForIdentifier:identifier
+                                             placeholder:placeholderImage
+                                                callback:nil];
+                        [[theValue([NSDate timeIntervalSinceReferenceDate] - startTime) should] beLessThanOrEqualTo:theValue(timeout)];
+                    }
+                });
+            });
         });
 
         describe(@"multiple images simultanously", ^{
@@ -348,6 +398,8 @@ describe(@"PLImageManager", ^{
                                          placeholder:nil callback:nil];
                     [imageManager imageForIdentifier:@"a3"
                                          placeholder:nil callback:nil];
+                    [imageManager imageForIdentifier:@"a4"
+                                         placeholder:nil callback:nil];
                     [downloadLock unlock];
 
                     [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
@@ -387,6 +439,13 @@ describe(@"PLImageManager", ^{
 
                     [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
                     [[lastDownloaded should] equal:@"a3"];
+
+                    [downloadLock lock];
+                    [downloadLock signal];
+                    [downloadLock unlock];
+
+                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+                    [[lastDownloaded should] equal:@"a4"];
 
                     [downloadLock lock];
                     [downloadLock signal];
