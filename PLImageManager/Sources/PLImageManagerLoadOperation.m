@@ -35,12 +35,14 @@
     NSString *key;
     UIImage *image;
     void (^readyBlock)(UIImage *);
+    NSUInteger usageCount;
 }
 
 @synthesize key = key;
 @synthesize image = image;
 @synthesize readyBlock = readyBlock;
-@synthesize opId;
+@synthesize opId = opId;
+@synthesize onCancelBlock = onCancelBlock;
 
 
 - (id)initWithKey:(NSString *)aKey loadBlock:(UIImage * (^)())aLoadBlock {
@@ -48,6 +50,7 @@
     if (self) {
         key = aKey;
         loadBlock = aLoadBlock;
+        usageCount = 1;
     }
 
     return self;
@@ -63,5 +66,31 @@
         NSLog(@"no work block was set");
     }
 }
+
+- (void)cancel {
+    [super cancel];
+    if (onCancelBlock != nil){
+        onCancelBlock();
+    }
+}
+
+- (void)incrementUsage {
+    usageCount++;
+}
+
+- (void)decrementUsageAndCancelOnZero {
+    if (usageCount <= 0){
+        return;
+    }
+
+    --usageCount;
+    if (usageCount == 0){
+        for (NSOperation * op in self.dependencies){
+            [op cancel];
+        }
+        [self cancel];
+    }
+}
+
 
 @end

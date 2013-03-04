@@ -277,7 +277,7 @@
 		2A11C65F16C4EE3D00510459 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"${PROJECT_DIR}/../PLImageManager/Tests/Externals\"/**";
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PLImageManagerExample/PLImageManagerExample-Prefix.pch";
 				INFOPLIST_FILE = "PLImageManagerExample/PLImageManagerExample-Info.plist";
@@ -291,7 +291,7 @@
 		2A11C66016C4EE3D00510459 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"${PROJECT_DIR}/../PLImageManager/Tests/Externals\"/**";
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PLImageManagerExample/PLImageManagerExample-Prefix.pch";
 				INFOPLIST_FILE = "PLImageManagerExample/PLImageManagerExample-Info.plist";

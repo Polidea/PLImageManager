@@ -28,8 +28,12 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "PLImageManager.h"
 
+@class PLImageManagerRequestToken;
 
-@interface PLURLImageProvider : NSObject <PLImageManagerProvider>
+@interface NSObject (PLImageManagerTokenStorage)
+
+-(void) storeToken:(PLImageManagerRequestToken *)token;
+-(PLImageManagerRequestToken *) retrieveToken;
+
 @end

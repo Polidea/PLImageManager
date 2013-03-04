@@ -25,7 +25,9 @@
 		ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */; };
 		ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */; };
 		ABCA9A24670B49930F07A2C6 /* NSString+SHA1.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */; };
+		ABCA9A7258A60FD9BA5498F2 /* NSObject+PLImageManagerTokenStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9BDCD2D9A785E8C63FEC /* NSObject+PLImageManagerTokenStorage.m */; };
 		ABCA9BA0C6097F9E7C6D90F7 /* PLImageManager.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */; };
+		ABCA9D3440A1AFABBAFC5255 /* NSObject+PLImageManagerTokenStorage.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */; };
 		ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */; };
 		ABCA9E19B40572AE53454119 /* PLImageCache.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */; };
 		ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */; };
@@ -53,6 +55,7 @@
 				ABCA9BA0C6097F9E7C6D90F7 /* PLImageManager.h in CopyFiles */,
 				ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */,
 				ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */,
+				ABCA9D3440A1AFABBAFC5255 /* NSObject+PLImageManagerTokenStorage.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +80,8 @@
 		ABCA980C1A23986FE73C70D2 /* PLImageManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManager.m; sourceTree = "<group>"; };
 		ABCA999306AB0CA306459260 /* UIImage+RandomImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+RandomImage.h"; sourceTree = "<group>"; };
 		ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCache.m; sourceTree = "<group>"; };
+		ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+PLImageManagerTokenStorage.h"; sourceTree = "<group>"; };
+		ABCA9BDCD2D9A785E8C63FEC /* NSObject+PLImageManagerTokenStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+PLImageManagerTokenStorage.m"; sourceTree = "<group>"; };
 		ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLURLImageProvider.m; sourceTree = "<group>"; };
 		ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerLoadOperation.m; sourceTree = "<group>"; };
 		ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+SHA1.m"; sourceTree = "<group>"; };
@@ -188,6 +193,8 @@
 				ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */,
 				ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */,
 				ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */,
+				ABCA9BDCD2D9A785E8C63FEC /* NSObject+PLImageManagerTokenStorage.m */,
+				ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -294,6 +301,7 @@
 				ABCA93CBF68FCD87F8E7EBAE /* PLImageManager.m in Sources */,
 				ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */,
 				ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */,
+				ABCA9A7258A60FD9BA5498F2 /* NSObject+PLImageManagerTokenStorage.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,6 +8,7 @@
 #import "PLTileListViewController.h"
 #import "PLAppDelegate.h"
 #import "PLTileManager.h"
+#import "NSObject+PLImageManagerTokenStorage.h"
 
 
 @implementation PLTileListViewController {
@@ -62,14 +63,17 @@ NSUInteger const tileXMax = 580;
     cell.imageView.backgroundColor = [UIColor blackColor];
     cell.imageView.image = nil;
 
-    [[PLAppDelegate appDelegate].tileManager tileForZoomLevel:10 tileX:tileXMin + indexPath.row
-                                                        tileY:tileYMin + indexPath.section
-                                                     callback:^(UIImage *image, NSUInteger zoom, NSInteger tileX, NSInteger tileY) {
-                                                         if (cell.tag == hash) {
-                                                             cell.imageView.image = image;
-                                                             [cell setNeedsLayout];
-                                                         }
-                                                     }];
+    [[cell retrieveToken] cancel];
+
+    PLImageManagerRequestToken *token = [[PLAppDelegate appDelegate].tileManager tileForZoomLevel:10 tileX:tileXMin + indexPath.row
+                                                                                            tileY:tileYMin + indexPath.section
+                                                                                         callback:^(UIImage *image, NSUInteger zoom, NSInteger tileX, NSInteger tileY) {
+                                                                                             if (cell.tag == hash) {
+                                                                                                 cell.imageView.image = image;
+                                                                                                 [cell setNeedsLayout];
+                                                                                             }
+                                                                                         }];
+    [cell storeToken:token];
 
     return cell;
 }

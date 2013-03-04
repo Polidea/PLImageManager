@@ -601,7 +601,7 @@ describe(@"PLImageManager", ^{
 
                         lastDownloaded = nil;
                         [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(NO)];//should time out
-                        [[lastDownloaded should] beNil];
+                        [[theValue(lastDownloaded == nil) should] equal:theValue(YES)];
 
                         [checkerLock unlock];
                     });

@@ -42,6 +42,8 @@
 - (id)initWithKey:(NSString *)aKey;
 - (void)markReady;
 
+@property (nonatomic, copy, readwrite) void (^onCancelBlock)();
+
 @end
 
 @implementation PLImageManager {
@@ -78,7 +80,7 @@
         downloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
         sentinelQueue = [NSOperationQueue new];
         sentinelQueue.name = @"plimagemanager.sentinel";
-        sentinelQueue.maxConcurrentOperationCount = 1;
+        sentinelQueue.maxConcurrentOperationCount = downloadQueue.maxConcurrentOperationCount;
 
         sentinelDict = [NSMutableDictionary new];
 
@@ -89,7 +91,6 @@
 }
 
 - (PLImageManagerRequestToken *)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
-    NSTimeInterval startTime = [NSDate timeIntervalSinceReferenceDate];
     Class identifierClass = [provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
@@ -116,6 +117,7 @@
     //first: fast memory only cache path
     UIImage *memoryCachedImage = [imageCache getWithKey:opKey onlyMemoryCache:YES];
     if (memoryCachedImage != nil) {
+        [token markReady];
         notifyBlock(memoryCachedImage, NO);
     } else {
         if (placeholder != nil) {
@@ -167,21 +169,27 @@
                 };
 
                 sentinelOp = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
-                    @synchronized (sentinelDict) {
-                        [sentinelDict removeObjectForKey:opKey];
-                    }
-                    if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
-                        [weakSentinelOp cancel];
-                        return nil;
-                    }
                     if (weakFileReadOperation.image != nil) {
                         return weakFileReadOperation.image;
                     } else if (weakDownloadOperation.image != nil) {
                         return weakDownloadOperation.image;
                     } else {
+                        if ([weakFileReadOperation isCancelled] && [weakDownloadOperation isCancelled]) {
+                            [weakSentinelOp cancel];
+                        }
                         return nil;
                     }
                 }];
+                sentinelOp.completionBlock = ^{
+                    @synchronized (sentinelDict) {
+                        [sentinelDict removeObjectForKey:opKey];
+                    }
+                };
+                sentinelOp.onCancelBlock = ^{
+                    @synchronized (sentinelDict) {
+                        [sentinelDict removeObjectForKey:opKey];
+                    }
+                };
                 sentinelOp.opId = @"sentinel";
 
                 [downloadOperation addDependency:fileReadOperation];
@@ -192,14 +200,21 @@
                 [ioQueue addOperation:fileReadOperation];
                 [sentinelQueue addOperation:sentinelOp];
                 [sentinelDict setObject:sentinelOp forKey:opKey];
+            } else {
+                [sentinelOp incrementUsage];
             }
             weakSentinelOp = sentinelOp;
         }
+
+        token.onCancelBlock = ^{
+            [weakSentinelOp decrementUsageAndCancelOnZero];
+        };
 
         NSBlockOperation *notifyOperation = [NSBlockOperation blockOperationWithBlock:^{
             if (weakSentinelOp.isCancelled) {
                 return;
             }
+            [token markReady];
             notifyBlock(weakSentinelOp.image, NO);
         }];
         [notifyOperation addDependency:sentinelOp];
@@ -207,7 +222,7 @@
         [[NSOperationQueue mainQueue] addOperation:notifyOperation];
     }
 
-    return nil;
+    return token;
 }
 
 - (void)deferCurrentDownloads {
@@ -233,6 +248,7 @@
 @synthesize key = key;
 @synthesize isCanceled = isCanceled;
 @synthesize isReady = isReady;
+@synthesize onCancelBlock = onCancelBlock;
 
 - (id)initWithKey:(NSString *)aKey {
     self = [super init];
@@ -256,10 +272,13 @@
 }
 
 - (void)cancel {
-    if (isCanceled) {
+    if (isCanceled || isReady) {
         return;
     }
     isCanceled = YES;
+    if (onCancelBlock){
+        onCancelBlock();
+    }
 }
 
 @end

@@ -27,9 +27,20 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <Foundation/Foundation.h>
+#import "NSObject+PLImageManagerTokenStorage.h"
 #import "PLImageManager.h"
+#import <objc/runtime.h>
 
+@implementation NSObject (PLImageManagerTokenStorage)
 
-@interface PLURLImageProvider : NSObject <PLImageManagerProvider>
+static char * const kPLImageManagerRequestTokenStorageKey = "PLImageManagerRequestTokenStorageKey";
+
+- (void)storeToken:(PLImageManagerRequestToken *)token {
+    objc_setAssociatedObject(self, kPLImageManagerRequestTokenStorageKey, token, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (PLImageManagerRequestToken *)retrieveToken {
+    return (PLImageManagerRequestToken *) objc_getAssociatedObject(self, kPLImageManagerRequestTokenStorageKey);
+}
+
 @end
