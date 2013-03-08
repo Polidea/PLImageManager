@@ -225,6 +225,21 @@
     return token;
 }
 
+- (void)clearCachedImageForIdentifier:(id <NSObject>)identifier{
+    Class identifierClass = [provider identifierClass];
+    if (![identifier isKindOfClass:identifierClass]) {
+        @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
+    }
+
+    NSString *const opKey = [provider keyForIdentifier:identifier];
+    [imageCache removeImageWithKey:opKey];
+}
+
+- (void)clearCache {
+    [imageCache clearMemoryCache];
+    [imageCache clearFileCache];
+}
+
 - (void)deferCurrentDownloads {
     @synchronized (sentinelDict) {
         for (PLImageManagerLoadOperation *op in [sentinelDict allValues]) {
@@ -233,10 +248,6 @@
             }
         }
     }
-}
-
-- (void)clearCache {
-    [imageCache clearMemoryCache];
 }
 
 @end

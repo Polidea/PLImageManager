@@ -65,6 +65,9 @@
     } else {
         NSLog(@"no work block was set");
     }
+    if (readyBlock != nil){
+        readyBlock(image);
+    }
 }
 
 - (void)cancel {

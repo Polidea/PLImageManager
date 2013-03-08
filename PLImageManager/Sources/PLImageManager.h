@@ -59,36 +59,92 @@
 *
 * Depending on the availability of the image the placeholder will be called:
 *
-* a) fast memory cache path: synchronously with the method call
+* a) fast memory cache path: synchronously with the method call.
 * b) file cache path and network path: asynchronously when the image is available. Additionally, if a placeholder is provided, the callback will be called synchronously with it before returning from the method.
 * c) in case of error the callback will be called with nil as the image parameter.
+* d) on error: the callback will be called with nil and isPlaceholder set to NO.
+*
+* @param identifier a identifier that uniquely represents the image
+*
+* @param placeholder optional image that will be used with the callback for "slow" path scenarios. Providing nil will disable this behaviour
+*
+* @param callback used to report request progress
+*
+* @return token that can be used to cancel the request. See [PLImageManagerRequestToken cancel] for more info
+*
+* @exception InvalidArgumentException if the provided identifier has a type other then [PLImageManagerProvider identifierClass]
+*
 */
 - (PLImageManagerRequestToken*)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback;
 
-- (void)deferCurrentDownloads;
+/**
+* Remove a image represented by identifier from the cache.
+*
+* @param identifier a identifier that uniquely represents the image
+*
+* @exception InvalidArgumentException if the provided identifier has a type other then [PLImageManagerProvider identifierClass]
+*/
+- (void)clearCachedImageForIdentifier:(id <NSObject>)identifier;
 
+/**
+* Removes all cached images.
+*
+* @param identifier a identifier that uniquely represents the image
+*
+* @exception InvalidArgumentException if the provided identifier has a type other then [PLImageManagerProvider identifierClass]
+*/
 - (void)clearCache;
+
+/**
+* Calling this method will lower the priority of all previously scheduled requests. As a result new requests
+* (and subsequent calls to already scheduled ones) will be handled first.
+*/
+- (void)deferCurrentDownloads;
 
 @end
 
+/**
+* A hook for PLImageManager, used to provide all use case specific data.
+*/
 @protocol PLImageManagerProvider <NSObject>
 @required
+
+/**
+* maxConcurrentDownloadsCount controls how many threads will be used to download images. Note: a high value can
+* significantly slow down the whole application.
+*/
 - (NSUInteger)maxConcurrentDownloadsCount;
 
+/**
+* Used at runtime to validate the identifiers provided to the PLImageManager methods.
+*/
 - (Class)identifierClass;
 
+/**
+* As PLImageManager is identifier type agnostic, it's up to the PLImageManagerProvider to provide a key for internal use.
+*/
 - (NSString *)keyForIdentifier:(id <NSObject>)identifier;
 
+/**
+* Should perform the actual download of the image for identifier. As a rule, this method should block until it returns.
+*/
 - (UIImage *)downloadImageWithIdentifier:(id <NSObject>)identifier error:(NSError **)error;
 
 @end
 
+/**
+* Represents a concrete request for a image. It allows tracking of the progress, and canceling the request.
+*/
 @interface PLImageManagerRequestToken : NSObject
 
 @property (nonatomic, strong, readonly) NSString * key;
 @property (nonatomic, assign, readonly) BOOL isCanceled;
 @property (nonatomic, assign, readonly) BOOL isReady;
 
+/**
+* Cancels the exact request for a image this token was returned for. The processing of the image will be canceled if all
+* request for it has been canceled.
+*/
 -(void) cancel;
 
 @end
