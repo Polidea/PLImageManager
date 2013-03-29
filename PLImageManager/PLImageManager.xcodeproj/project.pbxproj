@@ -14,14 +14,16 @@
 		2ACB1D1016D6275B0003E572 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C62116C4EDFB00510459 /* UIKit.framework */; };
 		2ACB1D1116D6275B0003E572 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C61016C4EDFB00510459 /* Foundation.framework */; };
 		2ACB1D6316D62B520003E572 /* Kiwi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2ACB1D5D16D62B520003E572 /* Kiwi.framework */; };
-		2ACB1D6516D62B520003E572 /* PLImageManagerSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = 2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */; };
 		2ACB1D6916D62C350003E572 /* libPLImageManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A11C60D16C4EDFB00510459 /* libPLImageManager.a */; };
 		2ACB1D6B16D64D930003E572 /* OCMock-iPhone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */; };
+		2AF40E8417048BFA0071FAD0 /* PLImageManagerSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = 2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */; };
+		2AF40E8517048BFD0071FAD0 /* PLImageManagerOpRunnerSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = 2AF40E8217048B530071FAD0 /* PLImageManagerOpRunnerSpecs.m */; };
 		ABCA904F6D2CA056E02C0277 /* PLImageCache.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA96C48D2F2A0936FF4D4B /* PLImageCache.h */; };
 		ABCA9092DB9AA8C0A83A86F7 /* NSString+SHA1.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */; };
 		ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */; };
 		ABCA91348A9A010A452EB599 /* UIImage+RandomImage.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */; };
 		ABCA93CBF68FCD87F8E7EBAE /* PLImageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA980C1A23986FE73C70D2 /* PLImageManager.m */; };
+		ABCA9533FDCCADC177E65CEC /* PLImageManagerOpRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9DFD21541B0D315C843A /* PLImageManagerOpRunner.m */; };
 		ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */; };
 		ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */; };
 		ABCA9A24670B49930F07A2C6 /* NSString+SHA1.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */; };
@@ -30,7 +32,9 @@
 		ABCA9D3440A1AFABBAFC5255 /* NSObject+PLImageManagerTokenStorage.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */; };
 		ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */; };
 		ABCA9E19B40572AE53454119 /* PLImageCache.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */; };
+		ABCA9F08A3EDB585F4C68329 /* PLImageMangerOpRunnerFake.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCA93DB62B1190AF8754B7B /* PLImageMangerOpRunnerFake.m */; };
 		ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */; };
+		ABCA9F81F50C576FB5571ECA /* PLImageManagerOpRunner.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = ABCA9155310196E0ACE9DC60 /* PLImageManagerOpRunner.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +60,7 @@
 				ABCA99822E94E12BB3A13B1C /* PLImageManagerLoadOperation.h in CopyFiles */,
 				ABCA9F2EE8E61BFEEC7B425A /* PLURLImageProvider.h in CopyFiles */,
 				ABCA9D3440A1AFABBAFC5255 /* NSObject+PLImageManagerTokenStorage.h in CopyFiles */,
+				ABCA9F81F50C576FB5571ECA /* PLImageManagerOpRunner.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,17 +79,22 @@
 		2ACB1D5F16D62B520003E572 /* PLImageManagerSpecs-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PLImageManagerSpecs-Prefix.pch"; sourceTree = "<group>"; };
 		2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerSpecs.m; sourceTree = "<group>"; };
 		2ACB1D6A16D64D930003E572 /* OCMock-iPhone.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = "OCMock-iPhone.framework"; sourceTree = "<group>"; };
+		2AF40E8217048B530071FAD0 /* PLImageManagerOpRunnerSpecs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerOpRunnerSpecs.m; sourceTree = "<group>"; };
 		ABCA9084BBE5485945899339 /* UIImage+RandomImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+RandomImage.m"; sourceTree = "<group>"; };
+		ABCA9155310196E0ACE9DC60 /* PLImageManagerOpRunner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManagerOpRunner.h; sourceTree = "<group>"; };
+		ABCA93DB62B1190AF8754B7B /* PLImageMangerOpRunnerFake.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageMangerOpRunnerFake.m; sourceTree = "<group>"; };
 		ABCA969D9D6949AA3E8A22F8 /* PLURLImageProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLURLImageProvider.h; sourceTree = "<group>"; };
 		ABCA96C48D2F2A0936FF4D4B /* PLImageCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageCache.h; sourceTree = "<group>"; };
 		ABCA980C1A23986FE73C70D2 /* PLImageManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManager.m; sourceTree = "<group>"; };
 		ABCA999306AB0CA306459260 /* UIImage+RandomImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+RandomImage.h"; sourceTree = "<group>"; };
 		ABCA9A5A61CE3F83A4FD6598 /* PLImageCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageCache.m; sourceTree = "<group>"; };
 		ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+PLImageManagerTokenStorage.h"; sourceTree = "<group>"; };
+		ABCA9B816A0DE40D8376A37A /* PLImageMangerOpRunnerFake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageMangerOpRunnerFake.h; sourceTree = "<group>"; };
 		ABCA9BDCD2D9A785E8C63FEC /* NSObject+PLImageManagerTokenStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+PLImageManagerTokenStorage.m"; sourceTree = "<group>"; };
 		ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLURLImageProvider.m; sourceTree = "<group>"; };
 		ABCA9C589E5F49A0B4925CAF /* PLImageManagerLoadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerLoadOperation.m; sourceTree = "<group>"; };
 		ABCA9C9FFC3F37F65061998B /* NSString+SHA1.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+SHA1.m"; sourceTree = "<group>"; };
+		ABCA9DFD21541B0D315C843A /* PLImageManagerOpRunner.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PLImageManagerOpRunner.m; sourceTree = "<group>"; };
 		ABCA9E72E7386AC5CAEF0E83 /* PLImageManagerLoadOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManagerLoadOperation.h; sourceTree = "<group>"; };
 		ABCA9E7F3A8246D12A3F135C /* NSString+SHA1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+SHA1.h"; sourceTree = "<group>"; };
 		ABCA9EEE7629C7CADD590CAC /* PLImageManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PLImageManager.h; sourceTree = "<group>"; };
@@ -158,6 +168,7 @@
 				2ACB1D5F16D62B520003E572 /* PLImageManagerSpecs-Prefix.pch */,
 				2ACB1D6016D62B520003E572 /* Specs */,
 				ABCA91F5F55A559904AC5018 /* Helpers */,
+				ABCA9346A6C6B5E5368B6A37 /* Fakes */,
 			);
 			path = PLImageManagerSpecs;
 			sourceTree = "<group>";
@@ -167,6 +178,7 @@
 			children = (
 				2ACB1D6116D62B520003E572 /* PLImageManagerSpecs.m */,
 				ABCA9F5029DAAE7EDD5AE8AB /* PLImageCacheSpecs.m */,
+				2AF40E8217048B530071FAD0 /* PLImageManagerOpRunnerSpecs.m */,
 			);
 			path = Specs;
 			sourceTree = "<group>";
@@ -195,8 +207,19 @@
 				ABCA9C120AF8F735ECD619BC /* PLURLImageProvider.m */,
 				ABCA9BDCD2D9A785E8C63FEC /* NSObject+PLImageManagerTokenStorage.m */,
 				ABCA9A9FF17A38B4C575DBF1 /* NSObject+PLImageManagerTokenStorage.h */,
+				ABCA9DFD21541B0D315C843A /* PLImageManagerOpRunner.m */,
+				ABCA9155310196E0ACE9DC60 /* PLImageManagerOpRunner.h */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		ABCA9346A6C6B5E5368B6A37 /* Fakes */ = {
+			isa = PBXGroup;
+			children = (
+				ABCA93DB62B1190AF8754B7B /* PLImageMangerOpRunnerFake.m */,
+				ABCA9B816A0DE40D8376A37A /* PLImageMangerOpRunnerFake.h */,
+			);
+			path = Fakes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -302,6 +325,7 @@
 				ABCA9D4E4AE47E43E3E727ED /* PLImageManagerLoadOperation.m in Sources */,
 				ABCA9114D1E96E914E0479DC /* PLURLImageProvider.m in Sources */,
 				ABCA9A7258A60FD9BA5498F2 /* NSObject+PLImageManagerTokenStorage.m in Sources */,
+				ABCA9533FDCCADC177E65CEC /* PLImageManagerOpRunner.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -309,9 +333,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2ACB1D6516D62B520003E572 /* PLImageManagerSpecs.m in Sources */,
 				ABCA988B354A0159A30EFEE2 /* PLImageCacheSpecs.m in Sources */,
 				ABCA91348A9A010A452EB599 /* UIImage+RandomImage.m in Sources */,
+				ABCA9F08A3EDB585F4C68329 /* PLImageMangerOpRunnerFake.m in Sources */,
+				2AF40E8417048BFA0071FAD0 /* PLImageManagerSpecs.m in Sources */,
+				2AF40E8517048BFD0071FAD0 /* PLImageManagerOpRunnerSpecs.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

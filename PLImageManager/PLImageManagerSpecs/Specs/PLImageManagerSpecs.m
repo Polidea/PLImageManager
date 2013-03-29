@@ -2,12 +2,13 @@
 #import "PLImageManager.h"
 #import "PLImageCache.h"
 #import "UIImage+RandomImage.h"
+#import "PLImageManagerOpRunner.h"
+#import "PLImageMangerOpRunnerFake.h"
 #include <libkern/OSAtomic.h>
-#import <OCMock-iPhone/OCMArg.h>
 
 @interface PLImageManager ()
 
-- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache;
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache ioOpRunner:(PLImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLImageManagerOpRunner *)sentinelOpRunner;
 
 @end
 
@@ -31,9 +32,9 @@ describe(@"PLImageManager", ^{
 
         it(@"should ask the provider for the maxConcurrentDownloadsCount", ^{
             id provider = [KWMock nullMockForProtocol:@protocol(PLImageManagerProvider)];
-            
+
             [[[provider should] receive] maxConcurrentDownloadsCount];
-            
+
             imageManager = [[PLImageManager alloc] initWithProvider:provider];
         });
     });
@@ -43,6 +44,27 @@ describe(@"PLImageManager", ^{
         __block PLImageManager * imageManager;
         __block id providerMock;
         __block id cacheMock;
+        __block PLImageMangerOpRunnerFake * ioOpRunner;
+        __block PLImageMangerOpRunnerFake * downloadOpRunner;
+        __block PLImageMangerOpRunnerFake * sentinelOpRunner;
+
+        __block BOOL (^drainOpRunners)(NSUInteger) = ^(NSUInteger limit){
+            int i = limit;
+            while(i > 0){
+
+                NSUInteger exec = 0;
+                exec += [ioOpRunner step] ? 1 : 0;
+                exec += [downloadOpRunner step] ? 1 : 0;
+                exec += [sentinelOpRunner step] ? 1 : 0;
+                NSLog(@"exec[%d]: %d", i, exec);
+                if(exec == 0){
+                    return YES;
+                }
+                --i;
+                [NSThread sleepForTimeInterval:0.001];
+            };
+            return NO;
+        };
 
         beforeAll(^{
             identifierClass = [NSString class];
@@ -55,6 +77,10 @@ describe(@"PLImageManager", ^{
             [providerMock stub:@selector(keyForIdentifier:) withBlock:^id(NSArray *params) {
                 return [params objectAtIndex:0];
             }];
+
+            ioOpRunner = [PLImageMangerOpRunnerFake new];
+            downloadOpRunner = [PLImageMangerOpRunnerFake new];
+            sentinelOpRunner = [PLImageMangerOpRunnerFake new];
         });
 
         describe(@"a image", ^{
@@ -64,7 +90,11 @@ describe(@"PLImageManager", ^{
                 [providerMock stub:@selector(keyForIdentifier:) andReturn:identifier];
                 [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(1)];
                 [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:quickImage]; //force quick path
-                imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
+                imageManager = [[PLImageManager alloc] initWithProvider:providerMock
+                                                                  cache:cacheMock
+                                                             ioOpRunner:ioOpRunner
+                                                       downloadOpRunner:downloadOpRunner
+                                                       sentinelOpRunner:sentinelOpRunner];
             });
 
             describe(@"should ask the provider", ^{
@@ -86,18 +116,18 @@ describe(@"PLImageManager", ^{
                 });
 
                 it(@"to download the image", ^{
-                    NSThread * const callThread = [NSThread currentThread];
-
                     [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
                     [providerMock stub:@selector(downloadImageWithIdentifier:error:)
                              withBlock:^id(NSArray *params) {
-                                 [[[NSThread currentThread] shouldNot] equal:callThread];
+                                 [[theValue(downloadOpRunner.isExecuting) should] beTrue];
                                  return nil;
                              }];
 
-                    [[providerMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(downloadImageWithIdentifier:error:)];
+                    [[providerMock should] receive:@selector(downloadImageWithIdentifier:error:)];
 
                     [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
+
+                    [[theValue(drainOpRunners(20)) should] beTrue];
                 });
             });
 
@@ -108,23 +138,23 @@ describe(@"PLImageManager", ^{
                     [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
                 });
 
-                it(@"for image on the file system (not on the calling thread)", ^{
-                    NSThread * const callThread = [NSThread currentThread];
-
+                it(@"for image on the file system", ^{
                     [cacheMock stub:@selector(getWithKey:onlyMemoryCache:)
                           withBlock:^id(NSArray *params) {
                               if ([[params objectAtIndex:1] boolValue] == YES){
-                                  return nil;
+
                               } else  {
-                                  [[[NSThread currentThread] shouldNot] equal:callThread];
-                                  return nil;
+                                  [[theValue(ioOpRunner.isExecuting) should] beTrue];
                               }
+                              return nil;
                           }];
                     [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
 
-                    [[cacheMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(getWithKey:onlyMemoryCache:) withArguments:identifier, theValue(NO)];
+                    [[cacheMock should] receive:@selector(getWithKey:onlyMemoryCache:) withArguments:identifier, theValue(NO)];
 
                     [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
+
+                    drainOpRunners(20);
                 });
 
                 it(@"to store the image when it's downloaded", ^{
@@ -132,11 +162,17 @@ describe(@"PLImageManager", ^{
                           withBlock:^id(NSArray *params) {
                               return nil;
                           }];
+                    [cacheMock stub:@selector(set:forKey:) withBlock:^id(NSArray *params) {
+                        [[theValue(ioOpRunner.isExecuting) should] beTrue];
+                        return nil;
+                    }];
                     [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
 
-                    [[cacheMock shouldEventuallyBeforeTimingOutAfter(1.0)] receive:@selector(set:forKey:) withArguments:quickImage, identifier];
+                    [[cacheMock should] receive:@selector(set:forKey:) withArguments:quickImage, identifier];
 
                     [imageManager imageForIdentifier:identifier placeholder:nil callback:nil];
+
+                    drainOpRunners(20);
                 });
             });
 
@@ -170,52 +206,50 @@ describe(@"PLImageManager", ^{
                         }
                     }];
                     __block NSUInteger numberOfCalls = 0;
-                    __block UIImage * catchedImage;
-                    __block BOOL catchedIsPlaceholder;
 
                     [imageManager imageForIdentifier:identifier
                                          placeholder:placeholderImage
                                             callback:^(UIImage *image, BOOL isPlaceholder) {
-                                                ++numberOfCalls;
-                                                if (numberOfCalls == 1){
+                                                if (numberOfCalls == 0) {
                                                     [[image should] equal:placeholderImage];
-                                                    [[theValue(isPlaceholder) shouldNot] equal:theValue(NO)];
-                                                } else {
-                                                    catchedImage = image;
-                                                    catchedIsPlaceholder = isPlaceholder;
+                                                    [[theValue(isPlaceholder) should] beTrue];
+                                                    numberOfCalls = 1;
+                                                } else if (numberOfCalls == 1) {
+                                                    [[image should] equal:quickImage];
+                                                    [[theValue(isPlaceholder) should] beFalse];
+                                                    numberOfCalls = 2;
                                                 }
                                             }];
-
                     [[theValue(numberOfCalls) should] equal:theValue(1)]; //placeholder invocation
 
-                    [[expectFutureValue(catchedImage) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:quickImage];
-                    [[expectFutureValue(theValue(catchedIsPlaceholder)) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:theValue(NO)];
+                    drainOpRunners(20);
+
+                    [[theValue(numberOfCalls) should] equal:theValue(2)]; //image invocation
                 });
 
                 it(@"in slow path (network) scenario", ^{
                     [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
                     [providerMock stub:@selector(downloadImageWithIdentifier:error:) andReturn:quickImage];
                     __block NSUInteger numberOfCalls = 0;
-                    __block UIImage * catchedImage;
-                    __block BOOL catchedIsPlaceholder;
 
                     [imageManager imageForIdentifier:identifier
                                          placeholder:placeholderImage
                                             callback:^(UIImage *image, BOOL isPlaceholder) {
-                                                ++numberOfCalls;
-                                                if (numberOfCalls == 1){
+                                                if (numberOfCalls == 0) {
                                                     [[image should] equal:placeholderImage];
-                                                    [[theValue(isPlaceholder) should] equal:theValue(YES)];
-                                                } else {
-                                                    catchedImage = image;
-                                                    catchedIsPlaceholder = isPlaceholder;
+                                                    [[theValue(isPlaceholder) should] beTrue];
+                                                } else if (numberOfCalls == 1) {
+                                                    [[image should] equal:quickImage];
+                                                    [[theValue(isPlaceholder) should] beFalse];
                                                 }
+                                                ++numberOfCalls;
                                             }];
 
                     [[theValue(numberOfCalls) should] equal:theValue(1)]; //placeholder invocation
 
-                    [[expectFutureValue(catchedImage) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:quickImage];
-                    [[expectFutureValue(theValue(catchedIsPlaceholder)) shouldEventuallyBeforeTimingOutAfter(2.0)] equal:theValue(NO)];
+                    drainOpRunners(20);
+
+                    [[theValue(numberOfCalls) should] equal:theValue(2)]; //image invocation
                 });
             });
 
@@ -270,7 +304,6 @@ describe(@"PLImageManager", ^{
             });
 
             describe(@"should return a token", ^{
-
                 it(@"that is not nil", ^{
                     PLImageManagerRequestToken *token = [imageManager imageForIdentifier:identifier
                                                                              placeholder:nil
@@ -279,23 +312,6 @@ describe(@"PLImageManager", ^{
                 });
 
                 describe(@"that properly reports it's isReady state", ^{
-                    __block NSCondition *checkerLock;
-                    __block NSCondition *downloadLock;
-
-                    beforeEach(^{
-                        checkerLock = [NSCondition new];
-                        downloadLock = [NSCondition new];
-                    });
-
-                    afterEach(^{
-                        [downloadLock lock];
-                        [downloadLock broadcast];
-                        [downloadLock unlock];
-                        [checkerLock lock];
-                        [checkerLock broadcast];
-                        [checkerLock unlock];
-                    });
-
                     it(@"in quick flow scenario", ^{
                         PLImageManagerRequestToken *token = [imageManager imageForIdentifier:identifier
                                                                                  placeholder:nil
@@ -308,357 +324,285 @@ describe(@"PLImageManager", ^{
                             if ([[params objectAtIndex:1] boolValue] == YES){
                                 return nil;
                             } else {
-                                [downloadLock lock];
-                                [checkerLock lock];
-                                NSLog(@"will signal checker");
-                                [checkerLock signal];
-                                [checkerLock unlock];
-                                NSLog(@"start hang on download");
-                                [downloadLock wait];
-                                NSLog(@"stop hang on download");
-                                [downloadLock unlock];
                                 return quickImage;
                             }
                         }];
 
-                        [checkerLock lock];
                         PLImageManagerRequestToken *token = [imageManager imageForIdentifier:identifier
                                                                                  placeholder:nil
                                                                                     callback:nil];
 
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
                         [[theValue(token.isReady) should] beFalse];
 
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
+                        drainOpRunners(20);
 
-                        [checkerLock unlock];
-
-                        for(int i = 9; i >= 0; --i){
-                            if(token.isReady){
-                                break;
-                            }
-                            if (i == 0){
-                                [[theValue(token.isReady) should] beTrue];
-                            } else {
-                                [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-                            }
-                        }
+                        [[theValue(token.isReady) should] beTrue];
                     });
 
                     it(@"in slow path (network) scenario", ^{
                         [cacheMock stub:@selector(getWithKey:onlyMemoryCache:) andReturn:nil]; //force slow (network) path
                         [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
-                            [downloadLock lock];
-                            [checkerLock lock];
-                            [checkerLock signal];
-                            [checkerLock unlock];
-                            [downloadLock wait];
-                            [downloadLock unlock];
                             return quickImage;
                         }];
 
-                        [checkerLock lock];
                         PLImageManagerRequestToken *token = [imageManager imageForIdentifier:identifier
                                                                                  placeholder:nil
                                                                                     callback:nil];
 
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.0]]) should] equal:theValue(YES)];//should be signaled
                         [[theValue(token.isReady) should] beFalse];
 
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
+                        drainOpRunners(20);
 
-                        [checkerLock unlock];
-
-                        for(int i = 9; i >= 0; --i){
-                            if(token.isReady){
-                                break;
-                            }
-                            if (i == 0){
-                                [[theValue(token.isReady) should] beTrue];
-                            } else {
-                                [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-                            }
-                        }
+                        [[theValue(token.isReady) should] beTrue];
                     });
                 });
             });
         });
 
         describe(@"multiple images simultanously", ^{
-            it(@"should download all of them(on not more then maxConcurrentDownloadsCount threads)", ^{
-                //configuration
-                __block NSString *identifierTemplate = @"example_%d";
-                NSUInteger const maxDownloadCount = 5;
-                __block NSCondition *downloadLock;
-                __block NSCondition *checkerLock;
-                __block NSInteger runningDownloads = 0;
-                __block NSInteger downloadsLeft = 10;
+            NSUInteger const maxDownloadCount = 1;
 
+            beforeEach(^{
                 [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(maxDownloadCount)];
-                downloadLock = [NSCondition new];
-                checkerLock = [NSCondition new];
+                imageManager = [[PLImageManager alloc] initWithProvider:providerMock
+                                                                  cache:cacheMock
+                                                             ioOpRunner:ioOpRunner
+                                                       downloadOpRunner:downloadOpRunner
+                                                       sentinelOpRunner:sentinelOpRunner];
+            });
+
+            it(@"should download all of them", ^{
+                NSMutableArray * targets = [NSMutableArray arrayWithObjects:@"0", @"1", @"2", @"3", @"4", nil];
+
                 [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
-                    OSAtomicIncrement32(&runningDownloads);
-                    //notify checker
-                    [checkerLock lock];
-                    [checkerLock signal];
-                    [checkerLock unlock];
-                    //block yourself
-                    [downloadLock lock];
-                    [downloadLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
-                    [downloadLock unlock];
-
-                    OSAtomicDecrement32(&runningDownloads);
-                    OSAtomicDecrement32(&downloadsLeft);
-
-                    //notify checker once more
-                    [checkerLock lock];
-                    [checkerLock signal];
-                    [checkerLock unlock];
-
+                    NSString * identifier = [params objectAtIndex:0];
+                    [[theValue([targets containsObject:identifier]) should] beTrue];
+                    [targets removeObject:identifier];
                     return nil;
                 }];
-                imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
 
-                //test
-                [checkerLock lock];
-                for (int i = downloadsLeft; i > 0; --i) {
-                    [imageManager imageForIdentifier:[NSString stringWithFormat:identifierTemplate, i]
+                for (NSString * target in targets) {
+                    [imageManager imageForIdentifier:target
                                          placeholder:nil callback:nil];
                 }
-                [checkerLock unlock];
 
-                while (downloadsLeft > 0) {
-                    [checkerLock lock];
-                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]]) should] equal:theValue(YES)];//should be signaled
-                    [[theValue(runningDownloads) should] beLessThanOrEqualTo:theValue(maxDownloadCount)];
-                    [checkerLock unlock];
-                }
+                drainOpRunners(100);
 
-                //cleanup
-                [downloadLock lock];
-                [downloadLock broadcast];
-                [downloadLock unlock];
-                [checkerLock lock];
-                [checkerLock broadcast];
-                [checkerLock unlock];
+                [[theValue(targets.count) should] equal:theValue(0)];
             });
 
-            describe(@"should download in", ^{
-                __block NSString *identifierTemplate = @"example_%d";
-                NSUInteger const maxDownloadCount = 1;
-                __block NSCondition *checkerLock;
-                __block NSCondition *downloadLock;
-                __block NSString *lastDownloaded;
+            it(@"should download omiting canceled requests", ^{
+                NSMutableArray * targets = [NSMutableArray arrayWithObjects:@"0", @"1", @"2", @"3", @"4", nil];
+                NSMutableArray * tokens = [NSMutableArray arrayWithCapacity:targets.count];
+                NSMutableArray * canceled = [NSMutableArray arrayWithObjects:@"2", @"3", nil];
 
-                beforeEach(^{
-                    [providerMock stub:@selector(maxConcurrentDownloadsCount) andReturn:theValue(maxDownloadCount)];
-                    checkerLock = [NSCondition new];
-                    downloadLock = [NSCondition new];
-                    [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
-                        lastDownloaded = [params objectAtIndex:0];
-                        [downloadLock lock];
-                        [checkerLock lock];
-                        [checkerLock signal];
-                        [checkerLock unlock];
-                        [downloadLock wait];
-                        [downloadLock unlock];
-                        return nil;
-                    }];
-                    imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
-                });
+                [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
+                    NSString * identifier = [params objectAtIndex:0];
+                    [[theValue([targets containsObject:identifier]) should] beTrue];
+                    [[theValue([canceled containsObject:identifier]) should] beFalse];
+                    [targets removeObject:identifier];
+                    return nil;
+                }];
 
-                afterEach(^{
-                    [downloadLock lock];
-                    [downloadLock broadcast];
-                    [downloadLock unlock];
-                    [checkerLock lock];
-                    [checkerLock broadcast];
-                    [checkerLock unlock];
-                });
+                for (NSString *target in targets) {
+                    PLImageManagerRequestToken *token = [imageManager imageForIdentifier:target
+                                                                             placeholder:nil
+                                                                                callback:nil];
+                    if([canceled containsObject:target]){
+                        [tokens addObject:token];
+                    }
+                }
 
-                it(@"FIFO order", ^{
-                    [checkerLock lock];
-                    [imageManager imageForIdentifier:@"0"
-                                         placeholder:nil callback:nil];
-                    [imageManager imageForIdentifier:@"1"
-                                         placeholder:nil callback:nil];
-                    [imageManager imageForIdentifier:@"2"
-                                         placeholder:nil callback:nil];
+                for (PLImageManagerRequestToken * token in tokens) {
+                    [token cancel];
+                }
+                [targets removeObjectsInArray:canceled];
 
-                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                    [[lastDownloaded should] equal:@"0"];
+                drainOpRunners(100);
 
-                    [downloadLock lock];
-                    [downloadLock signal];
-                    [downloadLock unlock];
+                [[theValue(targets.count) should] equal:theValue(0)];
+            });
 
-                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                    [[lastDownloaded should] equal:@"1"];
+            it(@"should download canceled requests when rerequested", ^{
+                NSMutableArray * targets = [NSMutableArray arrayWithObjects:@"0", @"1", @"2", @"3", @"4", nil];
+                NSMutableArray * tokens = [NSMutableArray arrayWithCapacity:targets.count];
+                NSMutableArray * canceled = [NSMutableArray arrayWithObjects:@"2", @"3", nil];
 
-                    [downloadLock lock];
-                    [downloadLock signal];
-                    [downloadLock unlock];
+                [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
+                    NSString * identifier = [params objectAtIndex:0];
+                    [[theValue([targets containsObject:identifier]) should] beTrue];
+                    [targets removeObject:identifier];
+                    return nil;
+                }];
 
-                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                    [[lastDownloaded should] equal:@"2"];
+                for (NSString *target in targets) {
+                    PLImageManagerRequestToken *token = [imageManager imageForIdentifier:target
+                                                                             placeholder:nil
+                                                                                callback:nil];
+                    if([canceled containsObject:target]){
+                        [tokens addObject:token];
+                    }
+                }
 
-                    [downloadLock lock];
-                    [downloadLock signal];
-                    [downloadLock unlock];
+                for (PLImageManagerRequestToken * token in tokens) {
+                    [token cancel];
+                }
 
-                    [checkerLock unlock];
-                });
+                for (NSString *target in canceled) {
+                    [imageManager imageForIdentifier:target
+                                         placeholder:nil
+                                            callback:nil];
+                }
 
-//                //TODO: write a "weak" test for deferCurrentDownloads
-//                it(@"FIFO order taking calls to 'deferCurrentDownloads' into account", ^{
-//                    [checkerLock lock];
-//                    [downloadLock lock];
-//                    [imageManager imageForIdentifier:@"a0"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a1"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a2"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a3"
-//                                         placeholder:nil callback:nil];
-//                    [imageManager imageForIdentifier:@"a4"
-//                                         placeholder:nil callback:nil];
-//                    [downloadLock unlock];
+                drainOpRunners(100);
+
+                [[theValue(targets.count) should] equal:theValue(0)];
+            });
+
+            it(@"should download repeated requests even when partialy canceled", ^{
+                NSMutableArray * targets = [NSMutableArray arrayWithObjects:@"0", @"1", @"2", @"3", @"4", nil];
+                NSMutableArray * tokens = [NSMutableArray arrayWithCapacity:targets.count];
+                NSMutableArray * canceled = [NSMutableArray arrayWithObjects:@"2", @"3", nil];
+
+                [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
+                    NSString * identifier = [params objectAtIndex:0];
+                    [[theValue([targets containsObject:identifier]) should] beTrue];
+                    [targets removeObject:identifier];
+                    return nil;
+                }];
+
+                for (NSString *target in targets) {
+                    PLImageManagerRequestToken *token = [imageManager imageForIdentifier:target
+                                                                             placeholder:nil
+                                                                                callback:nil];
+                    if([canceled containsObject:target]){
+                        [tokens addObject:token];
+                    }
+                }
+
+                for (NSString *target in canceled) {
+                    [imageManager imageForIdentifier:target
+                                         placeholder:nil
+                                            callback:nil];
+                }
+
+                for (PLImageManagerRequestToken * token in tokens) {
+                    [token cancel];
+                }
+
+                drainOpRunners(100);
+
+                [[theValue(targets.count) should] equal:theValue(0)];
+            });
+
+            it(@"should download repeated requests only once", ^{
+                NSMutableArray * targets = [NSMutableArray arrayWithObjects:@"0", @"1", @"2", @"3", @"4", nil];
+                NSMutableArray * repeated = [NSMutableArray arrayWithObjects:@"0", @"3", nil];
+
+                [providerMock stub:@selector(downloadImageWithIdentifier:error:) withBlock:^id(NSArray *params) {
+                    NSString * identifier = [params objectAtIndex:0];
+                    [[theValue([targets containsObject:identifier]) should] beTrue];
+                    [targets removeObject:identifier];
+                    return nil;
+                }];
+
+                for (NSString *target in targets) {
+                    [imageManager imageForIdentifier:target
+                                         placeholder:nil
+                                            callback:nil];
+                }
+
+                for (NSString *target in repeated) {
+                    [imageManager imageForIdentifier:target
+                                         placeholder:nil
+                                            callback:nil];
+                }
+
+                drainOpRunners(100);
+
+                [[theValue(targets.count) should] equal:theValue(0)];
+            });
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a0"];
+////                //TODO: write a "weak" test for deferCurrentDownloads
 //
-//                    [imageManager deferCurrentDownloads];
 //
-//                    [imageManager imageForIdentifier:@"b0"
-//                                         placeholder:nil callback:nil];
+//                describe(@"FIFO order taking cancels into account", ^{
+//                    it(@"for non-repeating requests", ^{
+//                        [checkerLock lock];
+//                        [downloadLock lock];
+//                        PLImageManagerRequestToken * token = nil;
+//                        [imageManager imageForIdentifier:@"a0"
+//                                             placeholder:nil callback:nil];
+//                        token = [imageManager imageForIdentifier:@"a1"
+//                                                     placeholder:nil callback:nil];
+//                        [imageManager imageForIdentifier:@"a2"
+//                                             placeholder:nil callback:nil];
+//                        [downloadLock unlock];
 //
-//                    [checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                        [[lastDownloaded should] equal:@"a0"];
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                        [token cancel];
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"b0"];
+//                        [downloadLock lock];
+//                        [downloadLock signal];
+//                        [downloadLock unlock];
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                        [[lastDownloaded should] equal:@"a2"];
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a1"];
+//                        [downloadLock lock];
+//                        [downloadLock signal];
+//                        [downloadLock unlock];
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                        lastDownloaded = nil;
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(NO)];//should time out
+//                        [[theValue(lastDownloaded == nil) should] equal:theValue(YES)];
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a2"];
+//                        [checkerLock unlock];
+//                    });
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                    it(@"for repeating requests", ^{
+//                        [checkerLock lock];
+//                        [downloadLock lock];
+//                        PLImageManagerRequestToken * token = nil;
+//                        [imageManager imageForIdentifier:@"a0"
+//                                             placeholder:nil callback:nil];
+//                        token = [imageManager imageForIdentifier:@"a1"
+//                                                     placeholder:nil callback:nil];
+//                        [imageManager imageForIdentifier:@"a2"
+//                                             placeholder:nil callback:nil];
+//                        [imageManager imageForIdentifier:@"a1"
+//                                             placeholder:nil callback:nil];
+//                        [downloadLock unlock];
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a3"];
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                        [[lastDownloaded should] equal:@"a0"];
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                        [token cancel];
 //
-//                    [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-//                    [[lastDownloaded should] equal:@"a4"];
+//                        [downloadLock lock];
+//                        [downloadLock signal];
+//                        [downloadLock unlock];
 //
-//                    [downloadLock lock];
-//                    [downloadLock signal];
-//                    [downloadLock unlock];
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                        [[lastDownloaded should] equal:@"a1"];
 //
-//                    [checkerLock unlock];
+//                        [downloadLock lock];
+//                        [downloadLock signal];
+//                        [downloadLock unlock];
+//
+//                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
+//                        [[lastDownloaded should] equal:@"a2"];
+//
+//                        [downloadLock lock];
+//                        [downloadLock signal];
+//                        [downloadLock unlock];
+//
+//                        [checkerLock unlock];
+//                    });
 //                });
-
-                describe(@"FIFO order taking cancels into account", ^{
-                    it(@"for non-repeating requests", ^{
-                        [checkerLock lock];
-                        [downloadLock lock];
-                        PLImageManagerRequestToken * token = nil;
-                        [imageManager imageForIdentifier:@"a0"
-                                             placeholder:nil callback:nil];
-                        token = [imageManager imageForIdentifier:@"a1"
-                                                     placeholder:nil callback:nil];
-                        [imageManager imageForIdentifier:@"a2"
-                                             placeholder:nil callback:nil];
-                        [downloadLock unlock];
-
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                        [[lastDownloaded should] equal:@"a0"];
-
-                        [token cancel];
-
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
-
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                        [[lastDownloaded should] equal:@"a2"];
-
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
-
-                        lastDownloaded = nil;
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(NO)];//should time out
-                        [[theValue(lastDownloaded == nil) should] equal:theValue(YES)];
-
-                        [checkerLock unlock];
-                    });
-
-                    it(@"for repeating requests", ^{
-                        [checkerLock lock];
-                        [downloadLock lock];
-                        PLImageManagerRequestToken * token = nil;
-                        [imageManager imageForIdentifier:@"a0"
-                                             placeholder:nil callback:nil];
-                        token = [imageManager imageForIdentifier:@"a1"
-                                                     placeholder:nil callback:nil];
-                        [imageManager imageForIdentifier:@"a2"
-                                             placeholder:nil callback:nil];
-                        [imageManager imageForIdentifier:@"a1"
-                                             placeholder:nil callback:nil];
-                        [downloadLock unlock];
-
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                        [[lastDownloaded should] equal:@"a0"];
-
-                        [token cancel];
-
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
-
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                        [[lastDownloaded should] equal:@"a1"];
-
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
-
-                        [[theValue([checkerLock waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.2]]) should] equal:theValue(YES)];//should be signaled
-                        [[lastDownloaded should] equal:@"a2"];
-
-                        [downloadLock lock];
-                        [downloadLock signal];
-                        [downloadLock unlock];
-
-                        [checkerLock unlock];
-                    });
-                });
-            });
+//            });
         });
     });
 
@@ -679,7 +623,7 @@ describe(@"PLImageManager", ^{
             [providerMock stub:@selector(keyForIdentifier:) withBlock:^id(NSArray *params) {
                 return [params objectAtIndex:0];
             }];
-            imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock];
+            imageManager = [[PLImageManager alloc] initWithProvider:providerMock cache:cacheMock ioOpRunner:NULL downloadOpRunner:NULL sentinelOpRunner:NULL];
         });
 
         it(@"a image should call the proper image cache methods", ^{

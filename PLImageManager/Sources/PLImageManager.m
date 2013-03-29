@@ -30,10 +30,11 @@
 #import "PLImageManager.h"
 #import "PLImageCache.h"
 #import "PLImageManagerLoadOperation.h"
+#import "PLImageManagerOpRunner.h"
 
 @interface PLImageManager ()
 
-- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache;
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache ioOpRunner:(PLImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLImageManagerOpRunner *)sentinelOpRunner;
 
 @end
 
@@ -48,9 +49,9 @@
 
 @implementation PLImageManager {
 @private
-    NSOperationQueue *ioQueue;
-    NSOperationQueue *downloadQueue;
-    NSOperationQueue *sentinelQueue;
+    PLImageManagerOpRunner *ioQueue;
+    PLImageManagerOpRunner *downloadQueue;
+    PLImageManagerOpRunner *sentinelQueue;
 
     PLImageCache *imageCache;
     id <PLImageManagerProvider> provider;
@@ -59,11 +60,11 @@
 }
 
 - (id)initWithProvider:(id <PLImageManagerProvider>)aProvider {
-    return [self initWithProvider:aProvider cache:[PLImageCache new]];
+    return [self initWithProvider:aProvider cache:[PLImageCache new] ioOpRunner:[PLImageManagerOpRunner new] downloadOpRunner:[PLImageManagerOpRunner new] sentinelOpRunner:[PLImageManagerOpRunner new]];
 }
 
 //Note: this constructor is used by tests
-- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache {
+- (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache ioOpRunner:(PLImageManagerOpRunner *)aIoOpRunner downloadOpRunner:(PLImageManagerOpRunner *)aDownloadOpRunner sentinelOpRunner:(PLImageManagerOpRunner *)aSentinelOpRunner {
     self = [super init];
     if (self) {
         if (aProvider == nil) {
@@ -72,15 +73,15 @@
 
         provider = aProvider;
 
-        ioQueue = [NSOperationQueue new];
+        ioQueue = aIoOpRunner;
         ioQueue.name = @"plimagemanager.io";
-        ioQueue.maxConcurrentOperationCount = 1;
-        downloadQueue = [NSOperationQueue new];
+        ioQueue.maxConcurrentOperationsCount = 1;
+        downloadQueue = aDownloadOpRunner;
         downloadQueue.name = @"plimagemanager.download";
-        downloadQueue.maxConcurrentOperationCount = [provider maxConcurrentDownloadsCount];
-        sentinelQueue = [NSOperationQueue new];
+        downloadQueue.maxConcurrentOperationsCount = [provider maxConcurrentDownloadsCount];
+        sentinelQueue = aSentinelOpRunner;
         sentinelQueue.name = @"plimagemanager.sentinel";
-        sentinelQueue.maxConcurrentOperationCount = downloadQueue.maxConcurrentOperationCount;
+        sentinelQueue.maxConcurrentOperationsCount = downloadQueue.maxConcurrentOperationsCount;
 
         sentinelDict = [NSMutableDictionary new];
 
@@ -219,7 +220,7 @@
         }];
         [notifyOperation addDependency:sentinelOp];
         notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-        [[NSOperationQueue mainQueue] addOperation:notifyOperation];
+        [sentinelQueue addOperation:notifyOperation];
     }
 
     return token;
