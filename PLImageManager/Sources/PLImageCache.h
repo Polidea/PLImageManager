@@ -30,13 +30,59 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+/**
+PLImageCache handles all cache related work done by PLImageManager.
+
+It provides:
+
+1. in memory cache based on NSCache.
+2. in flash cache based on NSFileManager
+
+The interface is synchronous. To prevent accessing the file system in the main thread the behaviour of some methods can be limited to only operate on the memory cache.
+
+*/
 @interface PLImageCache : NSObject
 
+/**
+Retrieves a image stored under key from the cache.
+
+It tries to satisfy the request as fast as possible, queering first the memory cache, and then if necessary (and enabled) the file cache. If the image was found on the file system, it will be stored in the memory cache to speedup repeated access.
+
+@param key the identifier for the image
+
+@param onlyMemory if YES, only memory cache will be queried. Doing so ensures the swift return from this method (querying the file system is an order of magnitude slower). Providing NO can result in performing some IO operations, and therefor should not be called from the main thread.
+
+@return the stored image or nil if not cached. This method will block until it's done
+
+*/
 - (UIImage *)getWithKey:(NSString *)key onlyMemoryCache:(BOOL)onlyMemory;
+
+/**
+Stores the provided image under the key.
+
+Note: this performs a IO operation, and therefor should not be called from the main thread.
+
+@param image the image. Providing nil will remove the image stored in the cache.
+
+@param key key
+*/
 - (void)set:(UIImage *)image forKey:(NSString *)key;
+
+/**
+Same as calling [PLImageCache set:forKey:] with nil as the image.
+
+@param key key
+*/
 - (void)removeImageWithKey:(NSString *)key;
 
+/**
+Clears the contents of the memory cache.
+*/
 -(void) clearMemoryCache;
+
+/**
+Clears the contents of the file cache. Note: this performs a IO operation, and therefor should not be called from the main thread.
+*/
 -(void) clearFileCache;
 
 @end

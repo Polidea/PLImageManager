@@ -30,8 +30,16 @@
 #import <Foundation/Foundation.h>
 #import "PLImageManagerOpRunner.h"
 
+/**
+Used with [maxConcurrentOperationsCount]. No limit on the number of concurrent operations is set.
+*/
 extern NSUInteger const PLImageManagerOpRunnerUnlimited;
 
+/**
+PLImageManagerOpRunner is a abstraction of NSOperation runner. The default implementation uses NSOperationQueue internally.
+
+By reducing the interface to a subset used by PLImageManager, it's easier to stub this class during unit tests.
+*/
 @interface PLImageManagerOpRunner : NSObject
 
 @property(nonatomic, assign, readwrite) NSUInteger maxConcurrentOperationsCount;

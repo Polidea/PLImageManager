@@ -30,6 +30,12 @@
 #import <Foundation/Foundation.h>
 #import "PLImageManager.h"
 
+/**
+Default implementation of PLImageManagerProvider.
 
+It uses NSURLConnection internally to download up to 5 images at once.
+
+A direct NSString identifier to key translation is used.
+*/
 @interface PLURLImageProvider : NSObject <PLImageManagerProvider>
 @end
