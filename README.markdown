@@ -16,7 +16,7 @@ Image manager/downloader for iOS
 	
 The *provider* is responsible for retrieving a image if it is not available in cache. The standard PLURLImageProvider is provided as convienience. It takes a URL and simply downloads up to 5 images at once. By implementing the *PLImageManagerProvider* protocole yourself, you can adapt the manager to fit your needs.
 	
-### Usage
+### Requesting images
 	[manager imageForIdentifier:@”http://placehold.it/350/00aa00/ffffff” 
 	                placeholder:[UIImage imageNamed:@”placeholder” 
 		               callback:^(UIImage *image, BOOL isPlaceholder) {
@@ -29,6 +29,10 @@ A example application is provided, demonstrating:
 
 * one of the ways to integrate PLImageManager into your application, by subclassing it
 * canceling of image requests in a UITableView
+
+## Further reading
+
+You can read more about the internal workings of PLImageManager [here](http://www.polidea.com/en/Blog,141,Implementing_a_high_performance_image_manager_for_iOS).
 
 ---
 
