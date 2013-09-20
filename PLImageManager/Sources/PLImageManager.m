@@ -140,6 +140,7 @@
 
                     if (error) {
                         NSLog(@"Error downloading image: %@", error);
+                        return nil;
                     }
 
                     return image;
