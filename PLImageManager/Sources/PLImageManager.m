@@ -33,14 +33,6 @@
 #import "PLImageManagerOpRunner.h"
 
 @interface PLImageManager ()
-@property (strong, nonatomic) PLImageManagerOpRunner *ioQueue;
-@property (strong, nonatomic) PLImageManagerOpRunner *downloadQueue;
-@property (strong, nonatomic) PLImageManagerOpRunner *sentinelQueue;
-
-@property (strong, nonatomic) PLImageCache *imageCache;
-@property (strong, nonatomic) id <PLImageManagerProvider> provider;
-
-@property (strong, nonatomic) NSMutableDictionary *sentinelDict;
 
 - (id)initWithProvider:(id <PLImageManagerProvider>)aProvider cache:(PLImageCache *)aCache ioOpRunner:(PLImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLImageManagerOpRunner *)sentinelOpRunner;
 
@@ -55,7 +47,15 @@
 
 @end
 
-@implementation PLImageManager
+@implementation PLImageManager {
+    PLImageManagerOpRunner *ioQueue;
+    PLImageManagerOpRunner *downloadQueue;
+    PLImageManagerOpRunner *sentinelQueue;
+
+    PLImageCache *imageCache;
+    id <PLImageManagerProvider> provider;
+    NSMutableDictionary *sentinelDict;
+}
 
 - (id)initWithProvider:(id <PLImageManagerProvider>)aProvider {
     return [self initWithProvider:aProvider cache:[PLImageCache new] ioOpRunner:[PLImageManagerOpRunner new] downloadOpRunner:[PLImageManagerOpRunner new] sentinelOpRunner:[PLImageManagerOpRunner new]];
@@ -68,34 +68,34 @@
         if (aProvider == nil) {
             @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:@"A valid provider is missing" userInfo:nil];
         }
-        
-        self.provider = aProvider;
-        
-        self.ioQueue = aIoOpRunner;
-        self.ioQueue.name = @"plimagemanager.io";
-        self.ioQueue.maxConcurrentOperationsCount = 1;
-        self.downloadQueue = aDownloadOpRunner;
-        self.downloadQueue.name = @"plimagemanager.download";
-        self.downloadQueue.maxConcurrentOperationsCount = [self.provider maxConcurrentDownloadsCount];
-        self.sentinelQueue = aSentinelOpRunner;
-        self.sentinelQueue.name = @"plimagemanager.sentinel";
-        self.sentinelQueue.maxConcurrentOperationsCount = self.downloadQueue.maxConcurrentOperationsCount;
-        
-        self.sentinelDict = [NSMutableDictionary new];
-        
-        self.imageCache = aCache;
+
+        provider = aProvider;
+
+        ioQueue = aIoOpRunner;
+        ioQueue.name = @"plimagemanager.io";
+        ioQueue.maxConcurrentOperationsCount = 1;
+        downloadQueue = aDownloadOpRunner;
+        downloadQueue.name = @"plimagemanager.download";
+        downloadQueue.maxConcurrentOperationsCount = [provider maxConcurrentDownloadsCount];
+        sentinelQueue = aSentinelOpRunner;
+        sentinelQueue.name = @"plimagemanager.sentinel";
+        sentinelQueue.maxConcurrentOperationsCount = downloadQueue.maxConcurrentOperationsCount;
+
+        sentinelDict = [NSMutableDictionary new];
+
+        imageCache = aCache;
     }
-    
+
     return self;
 }
 
 - (PLImageManagerRequestToken *)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
-    Class identifierClass = [self.provider identifierClass];
+    Class identifierClass = [provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
     }
 
-    NSString *const opKey = [self.provider keyForIdentifier:identifier];
+    NSString *const opKey = [provider keyForIdentifier:identifier];
 
     PLImageManagerRequestToken *token = [[PLImageManagerRequestToken alloc] initWithKey:opKey];
 
@@ -114,7 +114,7 @@
     };
 
     //first: fast memory only cache path
-    UIImage *memoryCachedImage = [self.imageCache getWithKey:opKey onlyMemoryCache:YES];
+    UIImage *memoryCachedImage = [imageCache getWithKey:opKey onlyMemoryCache:YES];
     if (memoryCachedImage != nil) {
         [token markReady];
         notifyBlock(memoryCachedImage, NO);
@@ -122,43 +122,47 @@
         if (placeholder != nil) {
             notifyBlock(placeholder, YES);
         }
-        
+
         //second: slow paths
         PLImageManagerLoadOperation *sentinelOp = nil;
         __weak __block PLImageManagerLoadOperation *weakSentinelOp;
-        @synchronized (self.sentinelDict) {
-            sentinelOp = [self.sentinelDict objectForKey:opKey];
+        @synchronized (sentinelDict) {
+            sentinelOp = [sentinelDict objectForKey:opKey];
             if (sentinelOp == nil) {
-                __weak typeof(self)weakSelf = self;
+                __weak typeof(provider)weakProvider = provider;
+                __weak typeof(imageCache)weakImageCache = imageCache;
+                __weak typeof(ioQueue)weakIOQueue = ioQueue;
+                __weak typeof(sentinelDict)weakSentinelDict = sentinelDict;
+
                 __weak __block PLImageManagerLoadOperation *weakDownloadOperation;
                 __weak __block PLImageManagerLoadOperation *weakFileReadOperation;
-                
+
                 PLImageManagerLoadOperation *downloadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
                     NSError *error = NULL;
-                    UIImage *image = [weakSelf.provider downloadImageWithIdentifier:identifier error:&error];
-                    
+                    UIImage *image = [weakProvider downloadImageWithIdentifier:identifier error:&error];
+
                     if (error) {
                         NSLog(@"Error downloading image: %@", error);
                         return nil;
                     }
-                    
+
                     return image;
                 }];
                 weakDownloadOperation = downloadOperation;
                 downloadOperation.opId = @"net";
-                
+
                 downloadOperation.readyBlock = ^(UIImage *image) {
                     if (image != nil) {
                         NSBlockOperation *storeOperation = [NSBlockOperation blockOperationWithBlock:^{
-                            [weakSelf.imageCache set:image forKey:opKey];
+                            [weakImageCache set:image forKey:opKey];
                         }];
                         storeOperation.queuePriority = NSOperationQueuePriorityHigh;
-                        [weakSelf.ioQueue addOperation:storeOperation];
+                        [weakIOQueue addOperation:storeOperation];
                     }
                 };
 
                 PLImageManagerLoadOperation *fileReadOperation = [[PLImageManagerLoadOperation alloc] initWithKey:opKey loadBlock:^UIImage * {
-                    return [weakSelf.imageCache getWithKey:opKey onlyMemoryCache:NO];
+                    return [weakImageCache getWithKey:opKey onlyMemoryCache:NO];
                 }];
                 weakFileReadOperation = fileReadOperation;
                 fileReadOperation.opId = @"file";
@@ -182,13 +186,13 @@
                     }
                 }];
                 sentinelOp.completionBlock = ^{
-                    @synchronized (weakSelf.sentinelDict) {
-                        [weakSelf.sentinelDict removeObjectForKey:opKey];
+                    @synchronized (weakSentinelDict) {
+                        [weakSentinelDict removeObjectForKey:opKey];
                     }
                 };
                 sentinelOp.onCancelBlock = ^{
-                    @synchronized (weakSelf.sentinelDict) {
-                        [weakSelf.sentinelDict removeObjectForKey:opKey];
+                    @synchronized (weakSentinelDict) {
+                        [weakSentinelDict removeObjectForKey:opKey];
                     }
                 };
                 sentinelOp.opId = @"sentinel";
@@ -196,11 +200,11 @@
                 [downloadOperation addDependency:fileReadOperation];
                 [sentinelOp addDependency:fileReadOperation];
                 [sentinelOp addDependency:downloadOperation];
-                
-                [self.downloadQueue addOperation:downloadOperation];
-                [self.ioQueue addOperation:fileReadOperation];
-                [self.sentinelQueue addOperation:sentinelOp];
-                [self.sentinelDict setObject:sentinelOp forKey:opKey];
+
+                [downloadQueue addOperation:downloadOperation];
+                [ioQueue addOperation:fileReadOperation];
+                [sentinelQueue addOperation:sentinelOp];
+                [sentinelDict setObject:sentinelOp forKey:opKey];
             } else {
                 [sentinelOp incrementUsage];
             }
