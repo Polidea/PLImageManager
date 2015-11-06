@@ -1,5 +1,11 @@
 # PLImageManager
 
+---
+
+This library is deprecated in favor of [PLXImageManager](https://github.com/Polidea/PLXImageManager)
+
+---
+
 Image manager/downloader for iOS
 
 ## Installation
@@ -11,24 +17,27 @@ Image manager/downloader for iOS
 ## Usage
 
 ### Creation
-	PLURLImageProvider * provider = [PLURLImageProvider new];
-	PLImageManager * manager = [[PLImageManager alloc] initWithProvider:provider];
-	
-The *provider* is responsible for retrieving a image if it is not available in cache. The standard PLURLImageProvider is provided as convienience. It takes a URL and simply downloads up to 5 images at once. By implementing the *PLImageManagerProvider* protocole yourself, you can adapt the manager to fit your needs.
-	
+
+```objective-c
+PLURLImageProvider * provider = [PLURLImageProvider new];
+PLImageManager * manager = [[PLImageManager alloc] initWithProvider:provider];
+```
+
+The *provider* is responsible for retrieving a image if it is not available in cache. The standard PLURLImageProvider is provided as convenience. It takes a URL and simply downloads up to 5 images at once. By implementing the *PLImageManagerProvider* protocol yourself, you can adapt the manager to fit your needs.
+
 ### Requesting images
-	[manager imageForIdentifier:@”http://placehold.it/350/00aa00/ffffff” 
-	                placeholder:[UIImage imageNamed:@”placeholder” 
-		               callback:^(UIImage *image, BOOL isPlaceholder) {
-    	//consume the image here
-	}];
+
+```objective-c
+[manager imageForIdentifier:@”http://placehold.it/350/00aa00/ffffff”
+                placeholder:[UIImage imageNamed:@”placeholder”
+	               callback:^(UIImage *image, BOOL isPlaceholder) {
+ 	//consume the image here
+}];
+```
 
 ### Example
 
-A example application is provided, demonstrating:
-
-* one of the ways to integrate PLImageManager into your application, by subclassing it
-* canceling of image requests in a UITableView
+A example application is provided,
 
 ## Further reading
 
@@ -36,4 +45,4 @@ You can read more about the internal workings of PLImageManager [here](http://ww
 
 ---
 
-Copyright (c) 2012 Polidea. This software is licensed under the BSD License.
+Copyright (c) 2013 Polidea. This software is licensed under the BSD License.

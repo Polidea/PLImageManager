@@ -33,10 +33,10 @@
 
 @implementation NSString (SHA1)
 
-- (NSString *)sha1Hash {
+- (NSString *)sha1Hash {   
     const char* str = [self UTF8String];
     unsigned char result[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(str, strlen(str), result);
+    CC_SHA1(str, (uint32_t)strlen(str), result);
 
     NSMutableString *ret = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH*2];
     for(int i = 0; i<CC_SHA1_DIGEST_LENGTH; i++) {
